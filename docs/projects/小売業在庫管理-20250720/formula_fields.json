@@ -1,0 +1,166 @@
+{
+  "formula_fields": {
+    "general_formulas": {
+      "残日数計算": {
+        "field_name": "残日数",
+        "formula": "IF(ステータス != \"完了\", 期限 - TODAY(), \"完了済\")",
+        "description": "タスクや発注の残り日数を計算",
+        "return_type": "テキスト/数値",
+        "usage": ["発注管理", "在庫アラート"]
+      },
+      "達成率": {
+        "field_name": "達成率",
+        "formula": "IF(目標 > 0, ROUND(実績 / 目標 * 100, 1), 0)",
+        "description": "目標に対する達成率を計算",
+        "return_type": "数値",
+        "suffix": "%",
+        "usage": ["KPIトラッキング"]
+      },
+      "アラート判定": {
+        "field_name": "期限アラート",
+        "formula": "IF(残日数 < 0, \"🚨遅延\", IF(残日数 < 3, \"⚠️期限間近\", \"✅正常\"))",
+        "description": "期限に基づくアラート表示",
+        "return_type": "テキスト",
+        "usage": ["発注管理", "棚卸管理"]
+      }
+    },
+    "inventory_specific_formulas": {
+      "在庫予測": {
+        "field_name": "在庫切れ予測",
+        "formula": "IF(現在庫数 / 日次平均消費 < 7, \"🚨緊急発注\", IF(現在庫数 / 日次平均消費 < 14, \"⚠️要確認\", \"✅正常\"))",
+        "description": "現在庫と消費速度から在庫切れを予測",
+        "return_type": "テキスト",
+        "usage": ["在庫残高サマリ", "商品マスタ"]
+      },
+      "在庫回転率": {
+        "field_name": "在庫回転率",
+        "formula": "IF(平均在庫数 > 0, ROUND(月間出荷数 * 12 / 平均在庫数, 2), 0)",
+        "description": "年間の在庫回転率を計算",
+        "return_type": "数値",
+        "suffix": "回/年",
+        "usage": ["在庫残高サマリ", "KPIトラッキング"]
+      },
+      "在庫金額": {
+        "field_name": "在庫評価額",
+        "formula": "現在庫数 * 仕入原価",
+        "description": "在庫の評価額を計算",
+        "return_type": "通貨",
+        "currency": "JPY",
+        "usage": ["在庫残高サマリ"]
+      },
+      "適正在庫判定": {
+        "field_name": "在庫状態",
+        "formula": "IF(現在庫数 < 安全在庫数, \"🔴在庫不足\", IF(現在庫数 > 安全在庫数 * 3, \"🟡過剰在庫\", \"🟢適正\"))",
+        "description": "安全在庫に対する現在庫の状態",
+        "return_type": "テキスト",
+        "usage": ["在庫残高サマリ", "商品マスタ"]
+      },
+      "発注推奨数": {
+        "field_name": "推奨発注数",
+        "formula": "IF(現在庫数 < 発注点, CEILING((発注点 * 2 - 現在庫数) / 発注単位) * 発注単位, 0)",
+        "description": "発注点を下回った場合の推奨発注数",
+        "return_type": "数値",
+        "usage": ["商品マスタ", "発注管理"]
+      }
+    },
+    "financial_formulas": {
+      "粗利率": {
+        "field_name": "粗利率",
+        "formula": "IF(標準売価 > 0, ROUND((標準売価 - 仕入原価) / 標準売価 * 100, 1), 0)",
+        "description": "商品の粗利率を計算",
+        "return_type": "数値",
+        "suffix": "%",
+        "usage": ["商品マスタ"]
+      },
+      "在庫保有コスト": {
+        "field_name": "月間保有コスト",
+        "formula": "在庫評価額 * 0.02",
+        "description": "在庫保有にかかる月間コスト（2%想定）",
+        "return_type": "通貨",
+        "currency": "JPY",
+        "usage": ["在庫残高サマリ"]
+      },
+      "機会損失額": {
+        "field_name": "推定機会損失",
+        "formula": "IF(欠品日数 > 0, 日次平均売上 * 欠品日数 * 0.7, 0)",
+        "description": "欠品による推定機会損失額",
+        "return_type": "通貨",
+        "currency": "JPY",
+        "usage": ["KPIトラッキング"]
+      }
+    },
+    "date_time_formulas": {
+      "リードタイム実績": {
+        "field_name": "実リードタイム",
+        "formula": "IF(AND(発注日 != \"\", 入荷完了日 != \"\"), 入荷完了日 - 発注日, \"\")",
+        "description": "発注から入荷までの実際の日数",
+        "return_type": "数値",
+        "suffix": "日",
+        "usage": ["発注管理"]
+      },
+      "消費期限アラート": {
+        "field_name": "期限状態",
+        "formula": "IF(有効期限 - TODAY() < 0, \"🔴期限切れ\", IF(有効期限 - TODAY() < 30, \"🟡期限間近\", \"🟢正常\"))",
+        "description": "商品の消費期限状態",
+        "return_type": "テキスト",
+        "usage": ["在庫移動履歴"]
+      },
+      "営業日数": {
+        "field_name": "月間営業日数",
+        "formula": "WORKDAY(月初日, 月末日)",
+        "description": "月間の営業日数を計算",
+        "return_type": "数値",
+        "suffix": "日",
+        "usage": ["KPIトラッキング"]
+      }
+    },
+    "analytics_formulas": {
+      "ABC分析": {
+        "field_name": "ABC区分",
+        "formula": "IF(売上累計比率 <= 70, \"A\", IF(売上累計比率 <= 90, \"B\", \"C\"))",
+        "description": "売上貢献度によるABC分析",
+        "return_type": "テキスト",
+        "usage": ["商品マスタ", "需要予測データ"]
+      },
+      "需要予測精度": {
+        "field_name": "予測精度",
+        "formula": "IF(予測値 > 0, ROUND((1 - ABS(実績値 - 予測値) / 予測値) * 100, 1), 0)",
+        "description": "需要予測の精度を計算",
+        "return_type": "数値",
+        "suffix": "%",
+        "usage": ["需要予測データ"]
+      },
+      "在庫効率スコア": {
+        "field_name": "効率スコア",
+        "formula": "ROUND(在庫回転率 * 0.4 + (100 - 欠品率) * 0.3 + (100 - 過剰在庫率) * 0.3, 1)",
+        "description": "複合指標による在庫効率の総合評価",
+        "return_type": "数値",
+        "max_value": 100,
+        "usage": ["KPIトラッキング"]
+      }
+    },
+    "workflow_formulas": {
+      "承認要否判定": {
+        "field_name": "承認必要",
+        "formula": "IF(OR(発注金額合計 > 1000000, 緊急発注フラグ = TRUE), TRUE, FALSE)",
+        "description": "金額や条件による承認要否の自動判定",
+        "return_type": "チェックボックス",
+        "usage": ["発注管理"]
+      },
+      "エスカレーション判定": {
+        "field_name": "エスカレーション",
+        "formula": "IF(AND(対応ステータス = \"未対応\", 発生日時 + 2 < NOW()), \"要エスカレーション\", \"正常\")",
+        "description": "未対応アラートのエスカレーション判定",
+        "return_type": "テキスト",
+        "usage": ["在庫アラート"]
+      },
+      "自動発注判定": {
+        "field_name": "自動発注可",
+        "formula": "IF(AND(在庫切れ予測 = \"🚨緊急発注\", 仕入先.取引ステータス = \"取引中\", 推奨発注数 > 0), TRUE, FALSE)",
+        "description": "自動発注の可否を判定",
+        "return_type": "チェックボックス",
+        "usage": ["商品マスタ", "在庫アラート"]
+      }
+    }
+  }
+}

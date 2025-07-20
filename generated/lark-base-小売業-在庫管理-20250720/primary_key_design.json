@@ -1,0 +1,104 @@
+{
+  "primary_key_design": {
+    "design_principles": {
+      "master_tables": "直接入力型主キーを使用",
+      "transaction_tables": "数式結合型主キーを使用",
+      "positioning": "全テーブルで最左端に配置",
+      "visibility": "リンクプレビューで3フィールドまで表示"
+    },
+    "master_tables": {
+      "tbl_product_master": {
+        "field_name": "商品コード",
+        "type": "テキスト",
+        "format": "PRD-XXXXX",
+        "example": "PRD-00001",
+        "constraints": ["必須", "ユニーク"],
+        "position": 1,
+        "description": "商品を一意に識別するコード"
+      },
+      "tbl_store_master": {
+        "field_name": "店舗コード",
+        "type": "テキスト",
+        "format": "STR-XXX",
+        "example": "STR-001",
+        "constraints": ["必須", "ユニーク"],
+        "position": 1,
+        "description": "店舗・倉庫を一意に識別するコード"
+      },
+      "tbl_supplier_master": {
+        "field_name": "仕入先コード",
+        "type": "テキスト",
+        "format": "SUP-XXXXX",
+        "example": "SUP-00001",
+        "constraints": ["必須", "ユニーク"],
+        "position": 1,
+        "description": "仕入先を一意に識別するコード"
+      },
+      "tbl_category_master": {
+        "field_name": "カテゴリコード",
+        "type": "テキスト",
+        "format": "CAT-XXX",
+        "example": "CAT-001",
+        "constraints": ["必須", "ユニーク"],
+        "position": 1,
+        "description": "商品カテゴリを一意に識別するコード"
+      },
+      "tbl_location_master": {
+        "field_name": "ロケーションID",
+        "type": "テキスト",
+        "format": "LOC-XXXXX",
+        "example": "LOC-A01-01",
+        "constraints": ["必須", "ユニーク"],
+        "position": 1,
+        "description": "在庫保管場所を一意に識別するID"
+      }
+    },
+    "transaction_tables": {
+      "tbl_inventory_transaction": {
+        "field_name": "移動ID",
+        "type": "数式",
+        "formula": "CONCATENATE(TEXT(移動日時, \"YYYY-MM-DD\"), \"_\", 移動タイプ, \"_\", 店舗コード, \"_\", LEFT(商品名, 15))",
+        "example": "2024-01-15_入荷_STR-001_コーヒー豆ブレンド",
+        "position": 1,
+        "description": "在庫移動を識別する複合ID"
+      },
+      "tbl_purchase_order": {
+        "field_name": "発注ID",
+        "type": "数式",
+        "formula": "CONCATENATE(\"PO-\", TEXT(発注日, \"YYYYMMDD\"), \"-\", 仕入先コード, \"-\", TEXT(ROW_NUMBER(), \"000\"))",
+        "example": "PO-20240115-SUP-00001-042",
+        "position": 1,
+        "description": "発注を識別する複合ID"
+      },
+      "tbl_stocktake": {
+        "field_name": "棚卸ID",
+        "type": "数式",
+        "formula": "CONCATENATE(\"ST-\", TEXT(棚卸日, \"YYYYMMDD\"), \"_\", 店舗コード, \"_\", 棚卸タイプ)",
+        "example": "ST-20240115_STR-001_定期棚卸",
+        "position": 1,
+        "description": "棚卸実施を識別する複合ID"
+      },
+      "tbl_inventory_alert": {
+        "field_name": "アラートID",
+        "type": "数式",
+        "formula": "CONCATENATE(\"ALT-\", TEXT(発生日時, \"YYYYMMDD-HHmm\"), \"_\", アラートタイプ, \"_\", LEFT(商品名, 10))",
+        "example": "ALT-20240115-0930_欠品予測_コーヒー豆",
+        "position": 1,
+        "description": "在庫アラートを識別する複合ID"
+      }
+    },
+    "link_preview_settings": {
+      "display_fields": 3,
+      "priority_order": [
+        "主キー（ID）",
+        "ステータス",
+        "金額または数量"
+      ],
+      "examples": {
+        "商品マスタ_preview": ["商品コード", "商品名", "在庫数"],
+        "発注管理_preview": ["発注ID", "ステータス", "発注金額"],
+        "在庫移動_preview": ["移動ID", "移動タイプ", "数量"]
+      }
+    }
+  }
+}

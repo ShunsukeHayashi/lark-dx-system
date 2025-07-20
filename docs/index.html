@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lark Base 設計書ポータル</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #1a73e8;
+            --secondary-color: #34a853;
+            --background-color: #f8f9fa;
+            --surface-color: #ffffff;
+            --text-primary: #202124;
+            --text-secondary: #5f6368;
+            --border-color: #dadce0;
+            --shadow-sm: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+            --shadow-md: 0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15);
+            --radius: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);
+            color: white;
+            padding: 60px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 60%;
+            height: 200%;
+            background: rgba(255,255,255,0.1);
+            transform: rotate(35deg);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            font-size: 3em;
+            font-weight: 700;
+            margin-bottom: 10px;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .subtitle {
+            font-size: 1.3em;
+            opacity: 0.9;
+            animation: fadeInUp 0.6s ease-out 0.2s;
+            animation-fill-mode: both;
+        }
+
+        .content {
+            padding: 40px 0;
+        }
+
+        .card {
+            background: var(--surface-color);
+            border-radius: var(--radius);
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-icon {
+            font-size: 2em;
+            margin-right: 15px;
+        }
+
+        .card h2 {
+            font-size: 1.8em;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .project-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .project-card {
+            background: var(--surface-color);
+            border-radius: var(--radius);
+            padding: 25px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary-color);
+        }
+
+        .project-title {
+            font-size: 1.4em;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .project-meta {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+
+        .project-description {
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .project-link {
+            background: var(--primary-color);
+            color: white;
+            padding: 10px 20px;
+            border-radius: var(--radius);
+            text-decoration: none;
+            font-weight: 500;
+            transition: background 0.3s ease;
+            display: inline-block;
+        }
+
+        .project-link:hover {
+            background: #1557b0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .stat-card {
+            background: var(--surface-color);
+            padding: 20px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        .workflow-info {
+            background: #f5f6f7;
+            padding: 20px;
+            border-radius: var(--radius);
+            margin: 20px 0;
+        }
+
+        .workflow-step {
+            background: var(--surface-color);
+            padding: 15px;
+            border-radius: var(--radius);
+            margin: 10px 0;
+            border-left: 4px solid var(--primary-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+            
+            .project-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <h1>🗂️ Lark Base 設計書ポータル</h1>
+                <p class="subtitle">Claude Chainで自動生成されるLark Base設計書</p>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="content">
+            <!-- プロジェクト情報 -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-icon">🎯</span>
+                    <h2>プロジェクト一覧</h2>
+                </div>
+                
+                <div class="project-grid">
+                    <div class="project-card">
+                        <div class="project-title">小売業在庫管理統合システム</div>
+                        <div class="project-meta">
+                            生成日: 2025年7月20日 | 業界: 小売業 | 領域: 在庫管理
+                        </div>
+                        <div class="project-description">
+                            リアルタイム在庫追跡、自動発注、需要予測機能を備えた統合在庫管理システム。
+                            20,000SKU、50-200ユーザー、5チャネル対応。
+                        </div>
+                        <a href="projects/小売業在庫管理-20250720/index.html" class="project-link">設計書を開く</a>
+                    </div>
+                    
+                    <!-- 追加プロジェクト用のプレースホルダー -->
+                    <div class="project-card" style="border: 2px dashed var(--border-color); display: flex; align-items: center; justify-content: center; min-height: 200px;">
+                        <div style="text-align: center; color: var(--text-secondary);">
+                            <div style="font-size: 3em; margin-bottom: 10px;">➕</div>
+                            <div>新しいプロジェクトを生成</div>
+                            <div style="font-size: 0.9em; margin-top: 10px;">GitHub Actionsで<br>ワークフローを実行</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 統計情報 -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-icon">📊</span>
+                    <h2>生成統計</h2>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">1</div>
+                        <div class="stat-label">生成済みプロジェクト</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">7</div>
+                        <div class="stat-label">設計ドキュメント</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">10</div>
+                        <div class="stat-label">テーブル設計</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">5</div>
+                        <div class="stat-label">ワークフロー</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ワークフローの使い方 -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-icon">🚀</span>
+                    <h2>新しい設計書の生成方法</h2>
+                </div>
+                
+                <div class="workflow-info">
+                    <div class="workflow-step">
+                        <strong>Step 1:</strong> GitHubの <strong>Actions</strong> タブを開く
+                    </div>
+                    <div class="workflow-step">
+                        <strong>Step 2:</strong> <strong>"Lark Base Builder with Claude Chain"</strong> を選択
+                    </div>
+                    <div class="workflow-step">
+                        <strong>Step 3:</strong> <strong>"Run workflow"</strong> をクリック
+                    </div>
+                    <div class="workflow-step">
+                        <strong>Step 4:</strong> 業界と業務領域を入力（例: 製造業、品質管理）
+                    </div>
+                    <div class="workflow-step">
+                        <strong>Step 5:</strong> Claudeモデルと認証方法を選択
+                    </div>
+                    <div class="workflow-step">
+                        <strong>Step 6:</strong> ワークフローを実行し、完了まで待機
+                    </div>
+                </div>
+                
+                <p>実行後、このページに新しい設計書が自動的に追加されます。</p>
+            </div>
+
+            <!-- 利用可能なワークフロー -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-icon">⚙️</span>
+                    <h2>利用可能なワークフロー</h2>
+                </div>
+                
+                <div class="workflow-info">
+                    <div class="workflow-step">
+                        <strong>Lark Base Builder with Claude Chain</strong><br>
+                        完全なC1-C10タスクチェーン実行、Claude Chainによる高品質設計書生成
+                    </div>
+                    <div class="workflow-step">
+                        <strong>Lark Base Builder with Pages</strong><br>
+                        シンプルなテンプレート生成、クイックプロトタイピング用
+                    </div>
+                    <div class="workflow-step">
+                        <strong>Quick Pages Test</strong><br>
+                        GitHub Pages設定テスト、環境確認用
+                    </div>
+                </div>
+            </div>
+
+            <!-- 技術情報 -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-icon">🛠️</span>
+                    <h2>技術仕様</h2>
+                </div>
+                
+                <ul style="list-style: none; padding: 0;">
+                    <li style="padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                        <strong>AI Model:</strong> Claude 3.5 Sonnet / Claude Opus 4
+                    </li>
+                    <li style="padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                        <strong>Framework:</strong> Lark Base (多維表格)
+                    </li>
+                    <li style="padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                        <strong>Automation:</strong> GitHub Actions + Claude Code
+                    </li>
+                    <li style="padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                        <strong>Documentation:</strong> HTML5 + CSS3 + JavaScript
+                    </li>
+                    <li style="padding: 10px 0;">
+                        <strong>Hosting:</strong> GitHub Pages
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 動的プロジェクト追加機能（将来の拡張用）
+        function addProject(projectData) {
+            const projectGrid = document.querySelector('.project-grid');
+            const projectCard = document.createElement('div');
+            projectCard.className = 'project-card';
+            projectCard.innerHTML = `
+                <div class="project-title">${projectData.title}</div>
+                <div class="project-meta">${projectData.meta}</div>
+                <div class="project-description">${projectData.description}</div>
+                <a href="${projectData.link}" class="project-link">設計書を開く</a>
+            `;
+            // プレースホルダーの前に挿入
+            projectGrid.insertBefore(projectCard, projectGrid.lastElementChild);
+        }
+
+        // ページ読み込み時のアニメーション
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小売業在庫管理 - Lark Base 統合システム設計書</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #1a73e8;
+            --secondary-color: #34a853;
+            --warning-color: #fbbc04;
+            --danger-color: #ea4335;
+            --background-color: #f8f9fa;
+            --surface-color: #ffffff;
+            --text-primary: #202124;
+            --text-secondary: #5f6368;
+            --border-color: #dadce0;
+            --shadow-sm: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+            --shadow-md: 0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15);
+            --radius: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);
+            color: white;
+            padding: 60px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 60%;
+            height: 200%;
+            background: rgba(255,255,255,0.1);
+            transform: rotate(35deg);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            font-size: 3em;
+            font-weight: 700;
+            margin-bottom: 10px;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .subtitle {
+            font-size: 1.3em;
+            opacity: 0.9;
+            animation: fadeInUp 0.6s ease-out 0.2s;
+            animation-fill-mode: both;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin: 30px 0;
+            padding: 0 20px;
+            overflow-x: auto;
+            scrollbar-width: thin;
+        }
+
+        .nav-tab {
+            padding: 12px 24px;
+            background: var(--surface-color);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .nav-tab:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .nav-tab.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .content {
+            padding: 40px 0;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: var(--surface-color);
+            border-radius: var(--radius);
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-icon {
+            font-size: 2em;
+            margin-right: 15px;
+        }
+
+        .card h2 {
+            font-size: 1.8em;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95em;
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background: #f5f6f7;
+            font-weight: 600;
+            color: var(--text-secondary);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+
+        .badge-primary {
+            background: #e8f0fe;
+            color: #1a73e8;
+        }
+
+        .badge-success {
+            background: #e6f4ea;
+            color: #137333;
+        }
+
+        .badge-warning {
+            background: #fef7e0;
+            color: #b05a00;
+        }
+
+        .badge-danger {
+            background: #fce8e6;
+            color: #c5221f;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .stat-card {
+            background: var(--surface-color);
+            padding: 25px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary-color);
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        .workflow-diagram {
+            background: #f5f6f7;
+            padding: 30px;
+            border-radius: var(--radius);
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+
+        .workflow-step {
+            display: inline-block;
+            background: var(--surface-color);
+            padding: 15px 25px;
+            border-radius: var(--radius);
+            margin: 10px;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+        }
+
+        .workflow-step::after {
+            content: '→';
+            position: absolute;
+            right: -30px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.5em;
+            color: var(--text-secondary);
+        }
+
+        .workflow-step:last-child::after {
+            display: none;
+        }
+
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: var(--radius);
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.5;
+            margin: 20px 0;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .feature-list li {
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+        }
+
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+
+        .feature-icon {
+            font-size: 1.5em;
+            margin-right: 15px;
+            color: var(--secondary-color);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border-radius: 4px;
+            transition: width 0.6s ease;
+            animation: progressAnimation 1.5s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes progressAnimation {
+            from {
+                width: 0;
+            }
+        }
+
+        .timeline {
+            position: relative;
+            padding: 20px 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 0;
+            height: 100%;
+            width: 2px;
+            background: var(--border-color);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-left: 60px;
+            margin-bottom: 30px;
+        }
+
+        .timeline-marker {
+            position: absolute;
+            left: 10px;
+            top: 5px;
+            width: 20px;
+            height: 20px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            border: 3px solid var(--surface-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .timeline-content {
+            background: var(--surface-color);
+            padding: 20px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .search-box {
+            position: relative;
+            margin: 20px 0;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 15px 20px 15px 50px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius);
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-tabs {
+                flex-wrap: nowrap;
+                overflow-x: scroll;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            table {
+                font-size: 0.85em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <h1>🏢 小売業在庫管理統合システム</h1>
+                <p class="subtitle">Lark Base 設計書・実装ガイド - Claude Chain Generated</p>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="設計書内を検索..." id="searchInput">
+        </div>
+
+        <nav class="nav-tabs">
+            <div class="nav-tab active" data-tab="overview">📊 概要</div>
+            <div class="nav-tab" data-tab="requirements">📋 要件定義</div>
+            <div class="nav-tab" data-tab="tables">🗂️ テーブル設計</div>
+            <div class="nav-tab" data-tab="fields">📝 フィールド設計</div>
+            <div class="nav-tab" data-tab="workflows">⚡ ワークフロー</div>
+            <div class="nav-tab" data-tab="implementation">🚀 実装手順</div>
+            <div class="nav-tab" data-tab="timeline">📅 スケジュール</div>
+        </nav>
+
+        <div class="content">
+            <!-- 概要タブ -->
+            <div class="tab-content active" id="overview">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-icon">🎯</span>
+                        <h2>システム概要</h2>
+                    </div>
+                    <p>小売業における在庫管理業務を効率化するための統合管理システム。リアルタイムの在庫追跡、自動発注、需要予測、マルチチャネル在庫同期を実現します。</p>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">50-200</div>
+                            <div class="stat-label">想定利用者数</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">20,000</div>
+                            <div class="stat-label">管理SKU数</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">5</div>
+                            <div class="stat-label">チャネル数</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">200,000</div>
+                            <div class="stat-label">月間トランザクション</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-icon">✨</span>
+                        <h2>主要機能</h2>
+                    </div>
+                    <ul class="feature-list">
+                        <li>
+                            <span class="feature-icon">📦</span>
+                            <div>
+                                <strong>マスターデータ管理</strong>
+                                <p>商品、店舗、仕入先、カテゴリの基本情報を一元管理</p>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="feature-icon">🔄</span>
+                            <div>
+                                <strong>在庫トランザクション処理</strong>
+                                <p>入荷、出荷、移動、棚卸の記録と自動処理</p>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="feature-icon">🤖</span>
+                            <div>
+                                <strong>自動発注ワークフロー</strong>
+                                <p>在庫切れ予測に基づく自動発注と多段階承認フロー</p>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="feature-icon">📊</span>
+                            <div>
+                                <strong>リアルタイムダッシュボード</strong>
+                                <p>在庫状況、売上、回転率のリアルタイム分析と可視化</p>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="feature-icon">🔐</span>
+                            <div>
+                                <strong>マルチレベル権限管理</strong>
+                                <p>店舗別、部門別の階層的アクセス制御</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-icon">📈</span>
+                        <h2>目標KPI</h2>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>KPI項目</th>
+                                    <th>現状</th>
+                                    <th>目標値</th>
+                                    <th>改善率</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>在庫回転率</td>
+                                    <td>8回/年</td>
+                                    <td>12回/年</td>
+                                    <td><span class="badge badge-success">+50%</span></td>
+                                </tr>
+                                <tr>
+                                    <td>欠品率</td>
+                                    <td>5%</td>
+                                    <td>2%以下</td>
+                                    <td><span class="badge badge-success">-60%</span></td>
+                                </tr>
+                                <tr>
+                                    <td>過剰在庫率</td>
+                                    <td>10%</td>
+                                    <td>5%以下</td>
+                                    <td><span class="badge badge-success">-50%</span></td>
+                                </tr>
+                                <tr>
+                                    <td>発注リードタイム</td>
+                                    <td>5日</td>
+                                    <td>3日以内</td>
+                                    <td><span class="badge badge-success">-40%</span></td>
+                                </tr>
+                                <tr>
+                                    <td>在庫精度</td>
+                                    <td>95%</td>
+                                    <td>99%以上</td>
+                                    <td><span class="badge badge-success">+4%</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 要件定義タブ -->
+            <div class="tab-content" id="requirements">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-icon">📋</span>
+                        <h2>システム要件</h2>
+                    </div>
+                    <div class="code-block">
+                        <pre id="requirementYaml"></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- テーブル設計タブ -->
+            <div class="tab-content" id="tables">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-icon">🗂️</span>
+                        <h2>テーブル構成</h2>
+                    </div>
+                    <div class="workflow-diagram">
+                        <div class="workflow-step">商品マスタ</div>
+                        <div class="workflow-step">店舗マスタ</div>
+                        <div class="workflow-step">仕入先マスタ</div>
+                        <div class="workflow-step">在庫移動履歴</div>
+                        <div class="workflow-step">発注管理</div>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>テーブル名</th>
+                                    <th>テーブルID</th>
+                                    <th>説明</th>
+                                    <th>フィールド数</th>
+                                    <th>レコード数</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableList"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- フィールド設計タブ -->
+            <div class="tab-content" id="fields">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-icon">📝</span>
+                        <h2>フィールド詳細設計</h2>
+                    </div>
+                    <div id="fieldDetails"></div>
+                </div>
+            </div>
+
+            <!-- ワークフロータブ -->
+            <div class="tab-content" id="workflows">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-icon">⚡</span>
+                        <h2>自動化ワークフロー</h2>
+                    </div>
+                    <div id="workflowList"></div>
+                </div>
+            </div>
+
+            <!-- 実装手順タブ -->
+            <div class="tab-content" id="implementation">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-icon">🚀</span>
+                        <h2>実装手順</h2>
+                    </div>
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <h3>Step 1: Lark Base作成</h3>
+                                <p>Larkにログインし、新規Baseを作成。名前は「小売業在庫管理統合システム」に設定。</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <h3>Step 2: マスターテーブル作成</h3>
+                                <p>商品マスタ、店舗マスタ、仕入先マスタなどの基本テーブルを作成。</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <h3>Step 3: フィールド設定</h3>
+                                <p>各テーブルに必要なフィールドを追加。主キー、データ型、制約を適切に設定。</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <h3>Step 4: リレーション構築</h3>
+                                <p>テーブル間の双方向リンクを設定。ルックアップフィールドで関連情報を表示。</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <h3>Step 5: ワークフロー実装</h3>
+                                <p>在庫アラート、承認フロー、自動処理などのワークフローを設定。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- スケジュールタブ -->
+            <div class="tab-content" id="timeline">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-icon">📅</span>
+                        <h2>実装スケジュール</h2>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>フェーズ</th>
+                                    <th>期間</th>
+                                    <th>主なタスク</th>
+                                    <th>進捗</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Phase 0: 準備</td>
+                                    <td>3日間</td>
+                                    <td>環境設定、データ準備、設計レビュー</td>
+                                    <td>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 100%"></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Phase 1: データ基盤</td>
+                                    <td>2週間</td>
+                                    <td>テーブル作成、フィールド実装、リレーション構築</td>
+                                    <td>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 75%"></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Phase 2: 自動化</td>
+                                    <td>1週間</td>
+                                    <td>ワークフロー設定、ボタン実装</td>
+                                    <td>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 30%"></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Phase 3: 可視化</td>
+                                    <td>1週間</td>
+                                    <td>ビュー作成、ダッシュボード構築</td>
+                                    <td>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 0%"></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Phase 4: 運用準備</td>
+                                    <td>1週間</td>
+                                    <td>権限設定、テスト、移行、ユーザートレーニング</td>
+                                    <td>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 0%"></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.js"></script>
+    <script>
+        // タブ切り替え
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                this.classList.add('active');
+                document.getElementById(this.dataset.tab).classList.add('active');
+            });
+        });
+
+        // 検索機能
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const allContent = document.querySelectorAll('.card');
+            
+            allContent.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                card.style.display = text.includes(searchTerm) ? 'block' : 'none';
+            });
+        });
+
+        // データ読み込み
+        async function loadData() {
+            try {
+                // 要件定義の読み込み
+                const reqResponse = await fetch('requirement_spec.yaml');
+                if (reqResponse.ok) {
+                    const reqText = await reqResponse.text();
+                    document.getElementById('requirementYaml').textContent = reqText;
+                    Prism.highlightElement(document.getElementById('requirementYaml'));
+                }
+
+                // テーブル設計の読み込み
+                const tableResponse = await fetch('table_design.yaml');
+                if (tableResponse.ok) {
+                    const tableText = await tableResponse.text();
+                    // YAMLパーサーがない場合は簡易的に表示
+                    displayTables(tableText);
+                }
+
+                // フィールド設計の読み込み
+                const fieldResponse = await fetch('master_fields.json');
+                if (fieldResponse.ok) {
+                    const fieldData = await fieldResponse.json();
+                    displayFields(fieldData);
+                }
+
+                // ワークフローの読み込み
+                const workflowResponse = await fetch('alert_workflow.json');
+                if (workflowResponse.ok) {
+                    const workflowData = await workflowResponse.json();
+                    displayWorkflows(workflowData);
+                }
+            } catch (error) {
+                console.error('データ読み込みエラー:', error);
+            }
+        }
+
+        function displayTables(yamlText) {
+            // 簡易的なテーブル表示（実際はYAMLパーサーを使用）
+            const tableList = document.getElementById('tableList');
+            const tables = [
+                { name: '商品マスタ', id: 'tbl_product_master', desc: '商品・SKUの基本情報を管理', fields: 20, records: '20,000' },
+                { name: '店舗マスタ', id: 'tbl_store_master', desc: '店舗・倉庫の基本情報を管理', fields: 15, records: '50' },
+                { name: '仕入先マスタ', id: 'tbl_supplier_master', desc: '仕入先・メーカーの情報を管理', fields: 18, records: '500' },
+                { name: '在庫移動履歴', id: 'tbl_inventory_transaction', desc: '入出荷・移動・調整の履歴を記録', fields: 25, records: '500,000/年' },
+                { name: '発注管理', id: 'tbl_purchase_order', desc: '発注・仕入情報を管理', fields: 30, records: '50,000/年' }
+            ];
+            
+            tables.forEach(table => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${table.name}</strong></td>
+                    <td><code>${table.id}</code></td>
+                    <td>${table.desc}</td>
+                    <td>${table.fields}</td>
+                    <td>${table.records}</td>
+                `;
+                tableList.appendChild(row);
+            });
+        }
+
+        function displayFields(fieldData) {
+            const fieldDetails = document.getElementById('fieldDetails');
+            // フィールド詳細の表示ロジック
+            fieldDetails.innerHTML = '<p>フィールド設計の詳細データが読み込まれました。</p>';
+        }
+
+        function displayWorkflows(workflowData) {
+            const workflowList = document.getElementById('workflowList');
+            const workflows = Object.values(workflowData.alert_workflows || {});
+            
+            workflows.forEach(workflow => {
+                const workflowCard = document.createElement('div');
+                workflowCard.className = 'card';
+                workflowCard.innerHTML = `
+                    <h3>${workflow.workflow_name}</h3>
+                    <p>${workflow.description}</p>
+                    <p><strong>トリガー:</strong> ${workflow.trigger.type} - ${workflow.trigger.schedule || ''}</p>
+                `;
+                workflowList.appendChild(workflowCard);
+            });
+        }
+
+        // ページ読み込み時にデータを取得
+        window.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>

@@ -1,0 +1,375 @@
+{
+  "master_fields": {
+    "tbl_product_master": {
+      "table_name": "商品マスタ",
+      "fields": [
+        {
+          "field_name": "商品コード",
+          "type": "テキスト",
+          "required": true,
+          "unique": true,
+          "position": 1,
+          "format": "PRD-XXXXX"
+        },
+        {
+          "field_name": "商品名",
+          "type": "テキスト",
+          "required": true,
+          "position": 2,
+          "max_length": 100
+        },
+        {
+          "field_name": "商品名カナ",
+          "type": "テキスト",
+          "required": false,
+          "position": 3
+        },
+        {
+          "field_name": "カテゴリ",
+          "type": "単一選択",
+          "required": true,
+          "position": 4,
+          "options": [
+            {"value": "食品", "color": "🟢緑"},
+            {"value": "飲料", "color": "🔵青"},
+            {"value": "日用品", "color": "🟡黄"},
+            {"value": "衣料品", "color": "🟪紫"},
+            {"value": "家電", "color": "🟠オレンジ"}
+          ]
+        },
+        {
+          "field_name": "ステータス",
+          "type": "単一選択",
+          "required": true,
+          "position": 5,
+          "options": [
+            {"value": "販売中", "color": "🟢緑"},
+            {"value": "販売停止", "color": "🤍グレー"},
+            {"value": "廃番予定", "color": "🟡黄"},
+            {"value": "新商品", "color": "🔵青"}
+          ]
+        },
+        {
+          "field_name": "標準売価",
+          "type": "通貨",
+          "required": true,
+          "position": 6,
+          "currency": "JPY"
+        },
+        {
+          "field_name": "仕入原価",
+          "type": "通貨",
+          "required": true,
+          "position": 7,
+          "currency": "JPY"
+        },
+        {
+          "field_name": "安全在庫数",
+          "type": "数値",
+          "required": true,
+          "position": 8,
+          "default": 10,
+          "min": 0
+        },
+        {
+          "field_name": "発注点",
+          "type": "数値",
+          "required": true,
+          "position": 9,
+          "default": 20
+        },
+        {
+          "field_name": "発注単位",
+          "type": "数値",
+          "required": true,
+          "position": 10,
+          "default": 1
+        },
+        {
+          "field_name": "リードタイム",
+          "type": "数値",
+          "required": true,
+          "position": 11,
+          "suffix": "日",
+          "default": 3
+        },
+        {
+          "field_name": "JANコード",
+          "type": "テキスト",
+          "required": false,
+          "position": 12,
+          "format": "13桁"
+        },
+        {
+          "field_name": "仕入先",
+          "type": "リンク",
+          "required": true,
+          "position": 13,
+          "link_table": "tbl_supplier_master"
+        },
+        {
+          "field_name": "商品画像",
+          "type": "添付ファイル",
+          "required": false,
+          "position": 14,
+          "max_files": 5
+        },
+        {
+          "field_name": "登録日",
+          "type": "日付",
+          "required": true,
+          "position": 15,
+          "default": "TODAY()"
+        },
+        {
+          "field_name": "更新日",
+          "type": "日付",
+          "required": true,
+          "position": 16,
+          "auto_update": true
+        },
+        {
+          "field_name": "担当バイヤー",
+          "type": "ユーザー",
+          "required": true,
+          "position": 17,
+          "single_select": true
+        },
+        {
+          "field_name": "備考",
+          "type": "テキスト",
+          "required": false,
+          "position": 18,
+          "multiline": true
+        }
+      ]
+    },
+    "tbl_store_master": {
+      "table_name": "店舗マスタ",
+      "fields": [
+        {
+          "field_name": "店舗コード",
+          "type": "テキスト",
+          "required": true,
+          "unique": true,
+          "position": 1,
+          "format": "STR-XXX"
+        },
+        {
+          "field_name": "店舗名",
+          "type": "テキスト",
+          "required": true,
+          "position": 2
+        },
+        {
+          "field_name": "店舗タイプ",
+          "type": "単一選択",
+          "required": true,
+          "position": 3,
+          "options": [
+            {"value": "実店舗", "color": "🟢緑"},
+            {"value": "倉庫", "color": "🔵青"},
+            {"value": "物流センター", "color": "🟡黄"},
+            {"value": "ECセンター", "color": "🟪紫"}
+          ]
+        },
+        {
+          "field_name": "エリア",
+          "type": "単一選択",
+          "required": true,
+          "position": 4,
+          "options": [
+            {"value": "関東", "color": "🔵青"},
+            {"value": "関西", "color": "🟢緑"},
+            {"value": "中部", "color": "🟡黄"},
+            {"value": "九州", "color": "🟠オレンジ"},
+            {"value": "東北", "color": "🟪紫"}
+          ]
+        },
+        {
+          "field_name": "営業ステータス",
+          "type": "単一選択",
+          "required": true,
+          "position": 5,
+          "options": [
+            {"value": "営業中", "color": "🟢緑"},
+            {"value": "休業中", "color": "🤍グレー"},
+            {"value": "閉店予定", "color": "❤️赤"}
+          ]
+        },
+        {
+          "field_name": "住所",
+          "type": "テキスト",
+          "required": true,
+          "position": 6
+        },
+        {
+          "field_name": "電話番号",
+          "type": "テキスト",
+          "required": true,
+          "position": 7,
+          "format": "XXX-XXXX-XXXX"
+        },
+        {
+          "field_name": "営業時間",
+          "type": "テキスト",
+          "required": false,
+          "position": 8
+        },
+        {
+          "field_name": "店長",
+          "type": "ユーザー",
+          "required": true,
+          "position": 9,
+          "single_select": true
+        },
+        {
+          "field_name": "坪数",
+          "type": "数値",
+          "required": false,
+          "position": 10,
+          "suffix": "坪"
+        },
+        {
+          "field_name": "開店日",
+          "type": "日付",
+          "required": true,
+          "position": 11
+        },
+        {
+          "field_name": "備考",
+          "type": "テキスト",
+          "required": false,
+          "position": 12,
+          "multiline": true
+        }
+      ]
+    },
+    "tbl_supplier_master": {
+      "table_name": "仕入先マスタ",
+      "fields": [
+        {
+          "field_name": "仕入先コード",
+          "type": "テキスト",
+          "required": true,
+          "unique": true,
+          "position": 1,
+          "format": "SUP-XXXXX"
+        },
+        {
+          "field_name": "仕入先名",
+          "type": "テキスト",
+          "required": true,
+          "position": 2
+        },
+        {
+          "field_name": "仕入先カナ",
+          "type": "テキスト",
+          "required": false,
+          "position": 3
+        },
+        {
+          "field_name": "取引区分",
+          "type": "単一選択",
+          "required": true,
+          "position": 4,
+          "options": [
+            {"value": "メーカー", "color": "🟢緑"},
+            {"value": "卸売業者", "color": "🔵青"},
+            {"value": "商社", "color": "🟡黄"},
+            {"value": "直接仕入", "color": "🟪紫"}
+          ]
+        },
+        {
+          "field_name": "取引ステータス",
+          "type": "単一選択",
+          "required": true,
+          "position": 5,
+          "options": [
+            {"value": "取引中", "color": "🟢緑"},
+            {"value": "新規", "color": "🔵青"},
+            {"value": "取引停止", "color": "🤍グレー"},
+            {"value": "要注意", "color": "❤️赤"}
+          ]
+        },
+        {
+          "field_name": "支払条件",
+          "type": "単一選択",
+          "required": true,
+          "position": 6,
+          "options": [
+            {"value": "月末締め翌月末払い", "color": "🟢緑"},
+            {"value": "月末締め翌々月末払い", "color": "🔵青"},
+            {"value": "都度払い", "color": "🟡黄"},
+            {"value": "前払い", "color": "🟪紫"}
+          ]
+        },
+        {
+          "field_name": "担当者名",
+          "type": "テキスト",
+          "required": true,
+          "position": 7
+        },
+        {
+          "field_name": "電話番号",
+          "type": "テキスト",
+          "required": true,
+          "position": 8
+        },
+        {
+          "field_name": "メールアドレス",
+          "type": "テキスト",
+          "required": true,
+          "position": 9,
+          "format": "email"
+        },
+        {
+          "field_name": "住所",
+          "type": "テキスト",
+          "required": true,
+          "position": 10
+        },
+        {
+          "field_name": "取引開始日",
+          "type": "日付",
+          "required": true,
+          "position": 11
+        },
+        {
+          "field_name": "与信限度額",
+          "type": "通貨",
+          "required": false,
+          "position": 12,
+          "currency": "JPY"
+        },
+        {
+          "field_name": "発注方法",
+          "type": "複数選択",
+          "required": true,
+          "position": 13,
+          "options": [
+            {"value": "FAX", "color": "🟢緑"},
+            {"value": "メール", "color": "🔵青"},
+            {"value": "EDI", "color": "🟡黄"},
+            {"value": "Web", "color": "🟪紫"},
+            {"value": "電話", "color": "🟠オレンジ"}
+          ]
+        },
+        {
+          "field_name": "担当バイヤー",
+          "type": "ユーザー",
+          "required": true,
+          "position": 14,
+          "single_select": true
+        },
+        {
+          "field_name": "備考",
+          "type": "テキスト",
+          "required": false,
+          "position": 15,
+          "multiline": true
+        }
+      ]
+    }
+  }
+}

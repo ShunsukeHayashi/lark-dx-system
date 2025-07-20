@@ -1,0 +1,143 @@
+# Lark Base テーブル設計書
+# プロジェクト: 小売業在庫管理統合システム
+
+project_info:
+  id: retail-inventory-20250720
+  generated_date: 2025-07-20
+  
+tables:
+  master_tables:
+    - table_name: 商品マスタ
+      table_id: tbl_product_master
+      description: 商品・SKUの基本情報を管理
+      fields_count: 20
+      primary_key: 商品コード
+      estimated_records: 20000
+      
+    - table_name: 店舗マスタ
+      table_id: tbl_store_master
+      description: 店舗・倉庫の基本情報を管理
+      fields_count: 15
+      primary_key: 店舗コード
+      estimated_records: 50
+      
+    - table_name: 仕入先マスタ
+      table_id: tbl_supplier_master
+      description: 仕入先・メーカーの情報を管理
+      fields_count: 18
+      primary_key: 仕入先コード
+      estimated_records: 500
+      
+    - table_name: カテゴリマスタ
+      table_id: tbl_category_master
+      description: 商品分類・区分情報を管理
+      fields_count: 10
+      primary_key: カテゴリコード
+      estimated_records: 200
+      
+    - table_name: 在庫ロケーションマスタ
+      table_id: tbl_location_master
+      description: 棚番・エリア情報を管理
+      fields_count: 12
+      primary_key: ロケーションID
+      estimated_records: 1000
+      
+  transaction_tables:
+    - table_name: 在庫移動履歴
+      table_id: tbl_inventory_transaction
+      description: 入出荷・移動・調整の履歴を記録
+      fields_count: 25
+      primary_key: 移動ID
+      estimated_records: 500000/年
+      
+    - table_name: 発注管理
+      table_id: tbl_purchase_order
+      description: 発注・仕入情報を管理
+      fields_count: 30
+      primary_key: 発注ID
+      estimated_records: 50000/年
+      
+    - table_name: 棚卸管理
+      table_id: tbl_stocktake
+      description: 棚卸実施と差異の記録
+      fields_count: 20
+      primary_key: 棚卸ID
+      estimated_records: 10000/年
+      
+    - table_name: 在庫アラート
+      table_id: tbl_inventory_alert
+      description: 欠品・過剰在庫アラートを管理
+      fields_count: 15
+      primary_key: アラートID
+      estimated_records: 5000/月
+      
+  analytical_tables:
+    - table_name: 在庫残高サマリ
+      table_id: tbl_inventory_balance
+      description: 商品×店舗別の在庫残高を集計
+      fields_count: 15
+      primary_key: 残高ID
+      estimated_records: 100000
+      
+    - table_name: 需要予測データ
+      table_id: tbl_demand_forecast
+      description: AI予測と実績の比較データ
+      fields_count: 12
+      primary_key: 予測ID
+      estimated_records: 50000
+      
+    - table_name: KPIトラッキング
+      table_id: tbl_kpi_tracking
+      description: 各種KPIの推移を記録
+      fields_count: 20
+      primary_key: KPIID
+      estimated_records: 10000
+
+relationships:
+  - from: 在庫移動履歴
+    to: 商品マスタ
+    type: many-to-one
+    field: 商品コード
+    description: 移動対象商品の参照
+    
+  - from: 在庫移動履歴
+    to: 店舗マスタ
+    type: many-to-one
+    field: 移動元店舗
+    description: 移動元の店舗参照
+    
+  - from: 在庫移動履歴
+    to: 店舗マスタ
+    type: many-to-one
+    field: 移動先店舗
+    description: 移動先の店舗参照
+    
+  - from: 発注管理
+    to: 仕入先マスタ
+    type: many-to-one
+    field: 仕入先コード
+    description: 発注先の参照
+    
+  - from: 発注管理
+    to: 商品マスタ
+    type: many-to-many
+    field: 発注明細
+    description: 発注商品の参照（複数商品）
+    
+  - from: 商品マスタ
+    to: カテゴリマスタ
+    type: many-to-one
+    field: カテゴリコード
+    description: 商品分類の参照
+    
+  - from: 在庫残高サマリ
+    to: 商品マスタ
+    type: many-to-one
+    field: 商品コード
+    description: 残高対象商品の参照
+    
+  - from: 在庫残高サマリ
+    to: 店舗マスタ
+    type: many-to-one
+    field: 店舗コード
+    description: 残高保有店舗の参照

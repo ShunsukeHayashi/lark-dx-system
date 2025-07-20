@@ -1,0 +1,192 @@
+{
+  "visibility_optimization": {
+    "bidirectional_links": {
+      "parent_table_display": {
+        "description": "親テーブル側での関連レコード表示設定",
+        "examples": {
+          "商品マスタ": {
+            "在庫移動履歴_count": "関連する移動履歴数",
+            "発注管理_count": "関連する発注数",
+            "在庫アラート_count": "アクティブなアラート数"
+          },
+          "店舗マスタ": {
+            "在庫移動履歴_count": "該当店舗の移動履歴数",
+            "在庫残高_items": "保有商品数",
+            "発注管理_count": "進行中の発注数"
+          },
+          "仕入先マスタ": {
+            "商品マスタ_count": "取扱商品数",
+            "発注管理_count": "発注履歴数",
+            "発注管理_sum": "累計発注金額"
+          }
+        }
+      },
+      "child_table_display": {
+        "description": "子テーブル側での親レコード情報表示",
+        "examples": {
+          "在庫移動履歴": {
+            "商品": ["商品コード", "商品名", "現在庫数"],
+            "移動元店舗": ["店舗コード", "店舗名", "エリア"],
+            "移動先店舗": ["店舗コード", "店舗名", "エリア"]
+          },
+          "発注管理": {
+            "仕入先": ["仕入先コード", "仕入先名", "担当者名"],
+            "商品明細": ["商品コード", "商品名", "発注単価"],
+            "発注先店舗": ["店舗コード", "店舗名", "店長"]
+          },
+          "在庫アラート": {
+            "商品": ["商品コード", "商品名", "安全在庫数"],
+            "店舗": ["店舗コード", "店舗名", "営業ステータス"]
+          }
+        }
+      }
+    },
+    "lookup_fields": {
+      "商品関連": {
+        "from_product_master": {
+          "最終入荷日": {
+            "source": "在庫移動履歴",
+            "field": "移動日時",
+            "filter": "移動タイプ = '入荷'",
+            "function": "MAX"
+          },
+          "累計販売数": {
+            "source": "在庫移動履歴",
+            "field": "数量",
+            "filter": "移動タイプ = '出荷'",
+            "function": "SUM"
+          },
+          "平均在庫数": {
+            "source": "在庫残高サマリ",
+            "field": "現在庫数",
+            "function": "AVG"
+          },
+          "アクティブアラート": {
+            "source": "在庫アラート",
+            "field": "アラートID",
+            "filter": "対応ステータス != '対応済'",
+            "function": "COUNT"
+          }
+        }
+      },
+      "店舗関連": {
+        "from_store_master": {
+          "在庫評価額合計": {
+            "source": "在庫残高サマリ",
+            "field": "在庫評価額",
+            "function": "SUM"
+          },
+          "取扱商品数": {
+            "source": "在庫残高サマリ",
+            "field": "商品コード",
+            "filter": "現在庫数 > 0",
+            "function": "COUNT"
+          },
+          "月間入荷件数": {
+            "source": "在庫移動履歴",
+            "field": "移動ID",
+            "filter": "移動タイプ = '入荷' AND 移動日時 >= MONTH_START()",
+            "function": "COUNT"
+          },
+          "月間出荷件数": {
+            "source": "在庫移動履歴",
+            "field": "移動ID",
+            "filter": "移動タイプ = '出荷' AND 移動日時 >= MONTH_START()",
+            "function": "COUNT"
+          }
+        }
+      },
+      "仕入先関連": {
+        "from_supplier_master": {
+          "最終発注日": {
+            "source": "発注管理",
+            "field": "発注日",
+            "function": "MAX"
+          },
+          "累計発注金額": {
+            "source": "発注管理",
+            "field": "発注金額合計",
+            "filter": "発注ステータス != 'キャンセル'",
+            "function": "SUM"
+          },
+          "平均リードタイム": {
+            "source": "発注管理",
+            "field": "実リードタイム",
+            "filter": "発注ステータス = '完了'",
+            "function": "AVG"
+          },
+          "発注完了率": {
+            "source": "発注管理",
+            "formula": "COUNT(発注ステータス = '完了') / COUNT(*) * 100",
+            "function": "CALCULATE"
+          }
+        }
+      },
+      "発注関連": {
+        "from_purchase_order": {
+          "入荷進捗": {
+            "source": "在庫移動履歴",
+            "field": "数量",
+            "filter": "関連発注 = CURRENT_RECORD()",
+            "function": "SUM"
+          },
+          "入荷率": {
+            "formula": "入荷進捗 / 発注数量合計 * 100",
+            "function": "CALCULATE"
+          }
+        }
+      }
+    },
+    "link_preview_optimization": {
+      "settings": {
+        "max_display_fields": 3,
+        "preview_layout": "compact",
+        "show_icons": true
+      },
+      "field_priority": {
+        "priority_1": "主キー（ID/コード）",
+        "priority_2": "名称/ステータス",
+        "priority_3": "数量/金額/日付"
+      },
+      "custom_previews": {
+        "商品マスタ_preview": {
+          "fields": ["商品コード", "商品名", "在庫状態"],
+          "format": "{{商品コード}} - {{商品名}} [{{在庫状態}}]"
+        },
+        "発注管理_preview": {
+          "fields": ["発注ID", "発注ステータス", "発注金額合計"],
+          "format": "{{発注ID}} ({{発注ステータス}}) ¥{{発注金額合計}}"
+        },
+        "在庫移動_preview": {
+          "fields": ["移動ID", "移動タイプ", "数量"],
+          "format": "{{移動ID}} [{{移動タイプ}}] {{数量}}個"
+        },
+        "店舗マスタ_preview": {
+          "fields": ["店舗コード", "店舗名", "エリア"],
+          "format": "{{店舗コード}} {{店舗名}} ({{エリア}})"
+        }
+      }
+    },
+    "performance_optimization": {
+      "indexing": {
+        "recommended_indexes": [
+          "商品コード",
+          "店舗コード",
+          "仕入先コード",
+          "発注日",
+          "移動日時"
+        ]
+      },
+      "query_optimization": {
+        "use_filtered_lookups": true,
+        "limit_lookup_depth": 2,
+        "cache_frequent_queries": true
+      },
+      "display_optimization": {
+        "lazy_loading": true,
+        "pagination_size": 50,
+        "preview_cache_duration": "5分"
+      }
+    }
+  }
+}

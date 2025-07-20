@@ -1,0 +1,456 @@
+{
+  "transaction_fields": {
+    "tbl_inventory_transaction": {
+      "table_name": "在庫移動履歴",
+      "fields": [
+        {
+          "field_name": "移動ID",
+          "type": "数式",
+          "position": 1,
+          "formula": "CONCATENATE(TEXT(移動日時, \"YYYY-MM-DD\"), \"_\", 移動タイプ, \"_\", 店舗コード, \"_\", LEFT(商品名, 15))"
+        },
+        {
+          "field_name": "移動番号",
+          "type": "自動採番",
+          "position": 2,
+          "format": "TRN-YYYYMMDD-0001"
+        },
+        {
+          "field_name": "移動日時",
+          "type": "日時",
+          "required": true,
+          "position": 3,
+          "default": "NOW()"
+        },
+        {
+          "field_name": "移動タイプ",
+          "type": "単一選択",
+          "required": true,
+          "position": 4,
+          "options": [
+            {"value": "入荷", "color": "🟢緑"},
+            {"value": "出荷", "color": "🔵青"},
+            {"value": "店舗間移動", "color": "🟡黄"},
+            {"value": "返品", "color": "🟠オレンジ"},
+            {"value": "廃棄", "color": "❤️赤"},
+            {"value": "棚卸調整", "color": "🟪紫"},
+            {"value": "サンプル", "color": "🤍グレー"}
+          ]
+        },
+        {
+          "field_name": "ステータス",
+          "type": "単一選択",
+          "required": true,
+          "position": 5,
+          "default": "処理中",
+          "options": [
+            {"value": "予定", "color": "🔵青"},
+            {"value": "処理中", "color": "🟡黄"},
+            {"value": "完了", "color": "🟢緑"},
+            {"value": "キャンセル", "color": "🤍グレー"},
+            {"value": "エラー", "color": "❤️赤"}
+          ]
+        },
+        {
+          "field_name": "優先度",
+          "type": "単一選択",
+          "required": true,
+          "position": 6,
+          "default": "中",
+          "options": [
+            {"value": "緊急", "color": "❤️赤"},
+            {"value": "高", "color": "🟡黄"},
+            {"value": "中", "color": "🔵青"},
+            {"value": "低", "color": "🤍グレー"}
+          ]
+        },
+        {
+          "field_name": "商品",
+          "type": "リンク",
+          "required": true,
+          "position": 7,
+          "link_table": "tbl_product_master",
+          "single_select": true
+        },
+        {
+          "field_name": "移動元店舗",
+          "type": "リンク",
+          "required": true,
+          "position": 8,
+          "link_table": "tbl_store_master",
+          "single_select": true
+        },
+        {
+          "field_name": "移動先店舗",
+          "type": "リンク",
+          "required": false,
+          "position": 9,
+          "link_table": "tbl_store_master",
+          "single_select": true
+        },
+        {
+          "field_name": "数量",
+          "type": "数値",
+          "required": true,
+          "position": 10,
+          "min": 1,
+          "suffix": "個"
+        },
+        {
+          "field_name": "単価",
+          "type": "通貨",
+          "required": true,
+          "position": 11,
+          "currency": "JPY"
+        },
+        {
+          "field_name": "金額",
+          "type": "数式",
+          "position": 12,
+          "formula": "数量 * 単価"
+        },
+        {
+          "field_name": "ロット番号",
+          "type": "テキスト",
+          "required": false,
+          "position": 13
+        },
+        {
+          "field_name": "有効期限",
+          "type": "日付",
+          "required": false,
+          "position": 14
+        },
+        {
+          "field_name": "関連発注",
+          "type": "リンク",
+          "required": false,
+          "position": 15,
+          "link_table": "tbl_purchase_order"
+        },
+        {
+          "field_name": "承認フラグ",
+          "type": "チェックボックス",
+          "required": false,
+          "position": 16,
+          "default": false
+        },
+        {
+          "field_name": "緊急フラグ",
+          "type": "チェックボックス",
+          "required": false,
+          "position": 17,
+          "default": false
+        },
+        {
+          "field_name": "処理担当者",
+          "type": "ユーザー",
+          "required": true,
+          "position": 18,
+          "default": "CURRENT_USER()"
+        },
+        {
+          "field_name": "承認者",
+          "type": "ユーザー",
+          "required": false,
+          "position": 19
+        },
+        {
+          "field_name": "備考",
+          "type": "テキスト",
+          "required": false,
+          "position": 20,
+          "multiline": true
+        }
+      ]
+    },
+    "tbl_purchase_order": {
+      "table_name": "発注管理",
+      "fields": [
+        {
+          "field_name": "発注ID",
+          "type": "数式",
+          "position": 1,
+          "formula": "CONCATENATE(\"PO-\", TEXT(発注日, \"YYYYMMDD\"), \"-\", 仕入先コード, \"-\", TEXT(ROW_NUMBER(), \"000\"))"
+        },
+        {
+          "field_name": "発注番号",
+          "type": "自動採番",
+          "position": 2,
+          "format": "PO-YYYYMMDD-0001"
+        },
+        {
+          "field_name": "発注日",
+          "type": "日付",
+          "required": true,
+          "position": 3,
+          "default": "TODAY()"
+        },
+        {
+          "field_name": "納品予定日",
+          "type": "日付",
+          "required": true,
+          "position": 4
+        },
+        {
+          "field_name": "発注ステータス",
+          "type": "単一選択",
+          "required": true,
+          "position": 5,
+          "default": "新規",
+          "options": [
+            {"value": "新規", "color": "🔵青"},
+            {"value": "承認待ち", "color": "🟡黄"},
+            {"value": "発注済", "color": "🟢緑"},
+            {"value": "一部入荷", "color": "🟠オレンジ"},
+            {"value": "完了", "color": "🤍グレー"},
+            {"value": "キャンセル", "color": "❤️赤"}
+          ]
+        },
+        {
+          "field_name": "発注タイプ",
+          "type": "単一選択",
+          "required": true,
+          "position": 6,
+          "options": [
+            {"value": "定期発注", "color": "🟢緑"},
+            {"value": "緊急発注", "color": "❤️赤"},
+            {"value": "新商品発注", "color": "🔵青"},
+            {"value": "季節商品", "color": "🟡黄"},
+            {"value": "特売用", "color": "🟠オレンジ"}
+          ]
+        },
+        {
+          "field_name": "仕入先",
+          "type": "リンク",
+          "required": true,
+          "position": 7,
+          "link_table": "tbl_supplier_master",
+          "single_select": true
+        },
+        {
+          "field_name": "発注先店舗",
+          "type": "リンク",
+          "required": true,
+          "position": 8,
+          "link_table": "tbl_store_master",
+          "single_select": true
+        },
+        {
+          "field_name": "商品明細",
+          "type": "リンク",
+          "required": true,
+          "position": 9,
+          "link_table": "tbl_product_master",
+          "multiple_select": true
+        },
+        {
+          "field_name": "発注金額小計",
+          "type": "通貨",
+          "required": true,
+          "position": 10,
+          "currency": "JPY"
+        },
+        {
+          "field_name": "消費税",
+          "type": "数式",
+          "position": 11,
+          "formula": "発注金額小計 * 0.1"
+        },
+        {
+          "field_name": "発注金額合計",
+          "type": "数式",
+          "position": 12,
+          "formula": "発注金額小計 + 消費税"
+        },
+        {
+          "field_name": "支払予定日",
+          "type": "日付",
+          "required": false,
+          "position": 13
+        },
+        {
+          "field_name": "承認必要フラグ",
+          "type": "チェックボックス",
+          "required": false,
+          "position": 14,
+          "default": false
+        },
+        {
+          "field_name": "緊急発注フラグ",
+          "type": "チェックボックス",
+          "required": false,
+          "position": 15,
+          "default": false
+        },
+        {
+          "field_name": "発注担当者",
+          "type": "ユーザー",
+          "required": true,
+          "position": 16,
+          "default": "CURRENT_USER()"
+        },
+        {
+          "field_name": "承認者",
+          "type": "ユーザー",
+          "required": false,
+          "position": 17
+        },
+        {
+          "field_name": "承認日時",
+          "type": "日時",
+          "required": false,
+          "position": 18
+        },
+        {
+          "field_name": "発注メモ",
+          "type": "テキスト",
+          "required": false,
+          "position": 19,
+          "multiline": true
+        },
+        {
+          "field_name": "添付書類",
+          "type": "添付ファイル",
+          "required": false,
+          "position": 20,
+          "max_files": 10
+        }
+      ]
+    },
+    "tbl_inventory_alert": {
+      "table_name": "在庫アラート",
+      "fields": [
+        {
+          "field_name": "アラートID",
+          "type": "数式",
+          "position": 1,
+          "formula": "CONCATENATE(\"ALT-\", TEXT(発生日時, \"YYYYMMDD-HHmm\"), \"_\", アラートタイプ, \"_\", LEFT(商品名, 10))"
+        },
+        {
+          "field_name": "アラート番号",
+          "type": "自動採番",
+          "position": 2,
+          "format": "ALT-YYYYMMDD-0001"
+        },
+        {
+          "field_name": "発生日時",
+          "type": "日時",
+          "required": true,
+          "position": 3,
+          "default": "NOW()"
+        },
+        {
+          "field_name": "アラートタイプ",
+          "type": "単一選択",
+          "required": true,
+          "position": 4,
+          "options": [
+            {"value": "欠品予測", "color": "❤️赤"},
+            {"value": "在庫過多", "color": "🟡黄"},
+            {"value": "期限切れ間近", "color": "🟠オレンジ"},
+            {"value": "発注推奨", "color": "🔵青"},
+            {"value": "異常値検知", "color": "🟪紫"}
+          ]
+        },
+        {
+          "field_name": "重要度",
+          "type": "単一選択",
+          "required": true,
+          "position": 5,
+          "options": [
+            {"value": "緊急", "color": "❤️赤"},
+            {"value": "高", "color": "🟡黄"},
+            {"value": "中", "color": "🔵青"},
+            {"value": "低", "color": "🤍グレー"}
+          ]
+        },
+        {
+          "field_name": "対応ステータス",
+          "type": "単一選択",
+          "required": true,
+          "position": 6,
+          "default": "未対応",
+          "options": [
+            {"value": "未対応", "color": "❤️赤"},
+            {"value": "対応中", "color": "🟡黄"},
+            {"value": "対応済", "color": "🟢緑"},
+            {"value": "無視", "color": "🤍グレー"}
+          ]
+        },
+        {
+          "field_name": "商品",
+          "type": "リンク",
+          "required": true,
+          "position": 7,
+          "link_table": "tbl_product_master"
+        },
+        {
+          "field_name": "店舗",
+          "type": "リンク",
+          "required": true,
+          "position": 8,
+          "link_table": "tbl_store_master"
+        },
+        {
+          "field_name": "現在庫数",
+          "type": "数値",
+          "required": true,
+          "position": 9
+        },
+        {
+          "field_name": "閾値",
+          "type": "数値",
+          "required": true,
+          "position": 10
+        },
+        {
+          "field_name": "予測残日数",
+          "type": "数値",
+          "required": false,
+          "position": 11,
+          "suffix": "日"
+        },
+        {
+          "field_name": "推奨アクション",
+          "type": "テキスト",
+          "required": true,
+          "position": 12
+        },
+        {
+          "field_name": "対応期限",
+          "type": "日時",
+          "required": false,
+          "position": 13
+        },
+        {
+          "field_name": "通知済フラグ",
+          "type": "チェックボックス",
+          "required": false,
+          "position": 14,
+          "default": false
+        },
+        {
+          "field_name": "自動発注フラグ",
+          "type": "チェックボックス",
+          "required": false,
+          "position": 15,
+          "default": false
+        },
+        {
+          "field_name": "担当者",
+          "type": "ユーザー",
+          "required": false,
+          "position": 16
+        },
+        {
+          "field_name": "対応メモ",
+          "type": "テキスト",
+          "required": false,
+          "position": 17,
+          "multiline": true
+        }
+      ]
+    }
+  }
+}

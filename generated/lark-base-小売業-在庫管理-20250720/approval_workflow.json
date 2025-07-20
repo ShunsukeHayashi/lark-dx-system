@@ -1,0 +1,411 @@
+{
+  "approval_workflows": {
+    "purchase_order_approval": {
+      "workflow_name": "発注承認フロー",
+      "description": "金額や条件に応じた多段階承認プロセス",
+      "trigger": {
+        "type": "フィールド更新",
+        "monitor_field": "発注ステータス",
+        "condition": "値が '承認申請' に変更された時",
+        "target_table": "tbl_purchase_order"
+      },
+      "approval_levels": [
+        {
+          "level": 1,
+          "name": "部門承認",
+          "conditions": [
+            {
+              "field": "発注金額合計",
+              "operator": ">=",
+              "value": 100000,
+              "logic": "AND"
+            },
+            {
+              "field": "発注金額合計",
+              "operator": "<",
+              "value": 1000000
+            }
+          ],
+          "approvers": {
+            "type": "field_reference",
+            "field": "発注担当者.上長"
+          },
+          "deadline": "2営業日",
+          "escalation": {
+            "after": "1営業日",
+            "to": "部門長"
+          }
+        },
+        {
+          "level": 2,
+          "name": "管理職承認",
+          "conditions": [
+            {
+              "field": "発注金額合計",
+              "operator": ">=",
+              "value": 1000000,
+              "logic": "AND"
+            },
+            {
+              "field": "発注金額合計",
+              "operator": "<",
+              "value": 5000000
+            }
+          ],
+          "approvers": {
+            "type": "role",
+            "role": "購買部門マネージャー"
+          },
+          "deadline": "3営業日",
+          "escalation": {
+            "after": "2営業日",
+            "to": "購買部長"
+          }
+        },
+        {
+          "level": 3,
+          "name": "役員承認",
+          "conditions": [
+            {
+              "field": "発注金額合計",
+              "operator": ">=",
+              "value": 5000000,
+              "logic": "OR"
+            },
+            {
+              "field": "緊急発注フラグ",
+              "operator": "=",
+              "value": true,
+              "logic": "AND"
+            },
+            {
+              "field": "発注金額合計",
+              "operator": ">=",
+              "value": 1000000
+            }
+          ],
+          "approvers": {
+            "type": "group",
+            "group": ["購買部長", "財務部長"]
+          },
+          "approval_type": "all",
+          "deadline": "5営業日"
+        }
+      ],
+      "actions": {
+        "on_submit": [
+          {
+            "type": "field_update",
+            "updates": [
+              {
+                "field": "承認申請日時",
+                "value": "NOW()"
+              },
+              {
+                "field": "承認ステータス",
+                "value": "承認待ち"
+              }
+            ]
+          },
+          {
+            "type": "notification",
+            "recipients": ["{{current_approver}}"],
+            "message": "【承認依頼】発注承認をお願いします\\n発注番号: {{発注番号}}\\n仕入先: {{仕入先.仕入先名}}\\n金額: ¥{{発注金額合計}}\\n申請者: {{発注担当者}}",
+            "add_button": {
+              "label": "承認画面へ",
+              "action": "open_approval_form"
+            }
+          }
+        ],
+        "on_approval": [
+          {
+            "type": "field_update",
+            "updates": [
+              {
+                "field": "発注ステータス",
+                "value": "発注済"
+              },
+              {
+                "field": "承認日時",
+                "value": "NOW()"
+              },
+              {
+                "field": "承認者",
+                "value": "CURRENT_USER()"
+              },
+              {
+                "field": "承認履歴",
+                "value": "CONCATENATE(承認履歴, '\\n', TODAY(), ': ', CURRENT_USER(), ' - 承認')"
+              }
+            ]
+          },
+          {
+            "type": "notification",
+            "recipients": ["{{発注担当者}}"],
+            "message": "【承認完了】発注が承認されました\\n発注番号: {{発注番号}}\\n承認者: {{承認者}}\\n次のステップ: 仕入先への発注送信"
+          },
+          {
+            "type": "workflow_trigger",
+            "workflow": "発注送信ワークフロー"
+          }
+        ],
+        "on_rejection": [
+          {
+            "type": "field_update",
+            "updates": [
+              {
+                "field": "発注ステータス",
+                "value": "差戻し"
+              },
+              {
+                "field": "差戻し日時",
+                "value": "NOW()"
+              },
+              {
+                "field": "差戻し者",
+                "value": "CURRENT_USER()"
+              }
+            ]
+          },
+          {
+            "type": "notification",
+            "recipients": ["{{発注担当者}}"],
+            "message": "【承認否認】発注が差し戻されました\\n発注番号: {{発注番号}}\\n差戻し者: {{差戻し者}}\\n理由: {{差戻し理由}}\\n修正して再申請してください"
+          }
+        ],
+        "on_timeout": [
+          {
+            "type": "notification",
+            "recipients": ["{{escalation_approver}}", "@管理者"],
+            "message": "【承認遅延】承認期限を過ぎています\\n発注番号: {{発注番号}}\\n金額: ¥{{発注金額合計}}\\n申請日: {{承認申請日時}}\\n至急対応をお願いします",
+            "priority": "high"
+          }
+        ]
+      },
+      "reminders": [
+        {
+          "timing": "期限1日前",
+          "recipients": ["{{current_approver}}"],
+          "message": "【リマインダー】明日が承認期限です"
+        },
+        {
+          "timing": "期限当日",
+          "recipients": ["{{current_approver}}", "{{approver_manager}}"],
+          "message": "【緊急】本日が承認期限です"
+        }
+      ]
+    },
+    "inventory_adjustment_approval": {
+      "workflow_name": "棚卸差異承認フロー",
+      "description": "棚卸による在庫調整の承認プロセス",
+      "trigger": {
+        "type": "レコード作成",
+        "target_table": "tbl_stocktake",
+        "condition": "差異金額の絶対値 > 50000"
+      },
+      "approval_rules": [
+        {
+          "name": "少額差異",
+          "conditions": [
+            {
+              "field": "差異金額",
+              "operator": "ABS",
+              "comparison": "<=",
+              "value": 100000
+            }
+          ],
+          "approver": "店長",
+          "auto_approve_if": "差異率 < 1%"
+        },
+        {
+          "name": "高額差異",
+          "conditions": [
+            {
+              "field": "差異金額",
+              "operator": "ABS",
+              "comparison": ">",
+              "value": 100000
+            }
+          ],
+          "approver": "エリアマネージャー",
+          "requires_investigation": true
+        }
+      ],
+      "actions": {
+        "on_approval": [
+          {
+            "type": "record_create",
+            "target_table": "tbl_inventory_transaction",
+            "values": {
+              "移動タイプ": "棚卸調整",
+              "ステータス": "完了",
+              "商品": "{{商品}}",
+              "数量": "{{差異数量}}",
+              "備考": "棚卸による在庫調整（承認済）"
+            }
+          },
+          {
+            "type": "field_update",
+            "target_table": "tbl_inventory_balance",
+            "updates": [
+              {
+                "field": "現在庫数",
+                "value": "{{実地棚卸数}}"
+              },
+              {
+                "field": "最終棚卸日",
+                "value": "TODAY()"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "urgent_order_approval": {
+      "workflow_name": "緊急発注承認フロー",
+      "description": "通常の承認フローを短縮した緊急承認プロセス",
+      "trigger": {
+        "type": "フィールド更新",
+        "monitor_field": "緊急発注フラグ",
+        "condition": "値が TRUE に設定された時",
+        "target_table": "tbl_purchase_order"
+      },
+      "fast_track_rules": {
+        "approval_path": "並列承認",
+        "approvers": ["発注担当者の上長", "購買部門担当者"],
+        "required_approvals": 1,
+        "deadline": "4時間",
+        "notification_priority": "urgent"
+      },
+      "actions": {
+        "on_any_approval": [
+          {
+            "type": "field_update",
+            "updates": [
+              {
+                "field": "発注ステータス",
+                "value": "緊急承認済"
+              },
+              {
+                "field": "緊急承認者",
+                "value": "CURRENT_USER()"
+              },
+              {
+                "field": "緊急承認日時",
+                "value": "NOW()"
+              }
+            ]
+          },
+          {
+            "type": "notification",
+            "recipients": ["{{仕入先.担当者メール}}"],
+            "message": "【緊急発注】至急対応をお願いします",
+            "channel": "email",
+            "priority": "high"
+          }
+        ]
+      }
+    },
+    "return_approval": {
+      "workflow_name": "返品承認フロー",
+      "description": "商品返品の承認プロセス",
+      "trigger": {
+        "type": "レコード作成",
+        "target_table": "tbl_inventory_transaction",
+        "condition": "移動タイプ = '返品'"
+      },
+      "approval_matrix": {
+        "by_amount": [
+          {
+            "range": "0-50000",
+            "approver": "店舗担当者",
+            "can_self_approve": false
+          },
+          {
+            "range": "50001-200000",
+            "approver": "店長",
+            "requires_reason": true
+          },
+          {
+            "range": "200001-",
+            "approver": "エリアマネージャー",
+            "requires_investigation": true,
+            "additional_approver": "品質管理部門"
+          }
+        ]
+      },
+      "validation_checks": [
+        {
+          "check": "返品理由の記載",
+          "required": true
+        },
+        {
+          "check": "商品状態の確認",
+          "required": true
+        },
+        {
+          "check": "仕入先への連絡",
+          "required": "金額 > 100000"
+        }
+      ],
+      "actions": {
+        "on_approval": [
+          {
+            "type": "notification",
+            "recipients": ["{{商品.仕入先.担当者メール}}"],
+            "message": "返品申請のご連絡",
+            "attachments": ["返品明細", "返品理由書"]
+          },
+          {
+            "type": "field_update",
+            "updates": [
+              {
+                "field": "ステータス",
+                "value": "返品承認済"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "approval_settings": {
+    "global_settings": {
+      "business_days_only": true,
+      "timezone": "Asia/Tokyo",
+      "approval_history_retention": "3年",
+      "delegate_approval": {
+        "enabled": true,
+        "auto_delegate_on_absence": true
+      }
+    },
+    "notification_templates": {
+      "approval_request": {
+        "subject": "【承認依頼】{{workflow_name}} - {{record_id}}",
+        "body": "承認をお願いします。\\n\\n詳細:\\n{{approval_details}}\\n\\n期限: {{deadline}}",
+        "priority_indicators": {
+          "urgent": "🚨",
+          "high": "⚠️",
+          "normal": "📋"
+        }
+      },
+      "approval_reminder": {
+        "subject": "【リマインダー】承認期限が近づいています",
+        "body": "以下の承認が期限間近です：\\n{{pending_approvals}}",
+        "send_before": ["1日前", "2時間前"]
+      }
+    },
+    "approval_delegation": {
+      "rules": [
+        {
+          "condition": "承認者が不在設定中",
+          "delegate_to": "承認者の代理人"
+        },
+        {
+          "condition": "承認者が3日間未対応",
+          "delegate_to": "上位承認者"
+        }
+      ]
+    }
+  }
+}

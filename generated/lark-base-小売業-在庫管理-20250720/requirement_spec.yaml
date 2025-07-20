@@ -1,0 +1,80 @@
+# Lark Base システム要件定義書
+# 生成日時: 2025-07-20
+# プロジェクト: 小売業在庫管理統合システム
+
+application:
+  name: 小売業在庫管理統合管理システム
+  version: 1.0.0
+  created_date: 2025-07-20
+  project_id: retail-inventory-20250720
+  
+business_info:
+  industry: 小売業
+  domain: 在庫管理
+  description: |
+    小売業における在庫管理業務を効率化するための統合管理システム。
+    リアルタイムの在庫追跡、自動発注、需要予測、マルチチャネル在庫同期を実現。
+
+scale:
+  expected_users: 50-200名
+  initial_data_volume: 10000件
+  growth_rate: 年20%増加
+  
+  stores: 10-50店舗
+  skus: 5000-20000品目
+  suppliers: 100-500社
+  channels: 5チャネル（店舗、EC、卸売、B2B、マーケットプレイス）
+  monthly_transactions: 50000-200000件
+
+features:
+  - name: マスターデータ管理
+    description: 商品、店舗、仕入先、カテゴリの基本情報管理
+    priority: high
+    
+  - name: 在庫トランザクション処理
+    description: 入荷、出荷、移動、棚卸の記録と処理
+    priority: high
+    
+  - name: 自動発注ワークフロー
+    description: 在庫切れ予測に基づく自動発注と承認フロー
+    priority: high
+    
+  - name: リアルタイムダッシュボード
+    description: 在庫状況、売上、回転率のリアルタイム分析
+    priority: medium
+    
+  - name: マルチレベル権限管理
+    description: 店舗別、部門別の階層的アクセス制御
+    priority: medium
+
+kpis:
+  - 在庫回転率: 目標12回/年
+  - 欠品率: 目標2%以下
+  - 過剰在庫率: 目標5%以下
+  - 発注リードタイム: 目標3日以内
+  - 在庫精度: 目標99%以上
+
+implementation_schedule:
+  phase0_preparation:
+    duration: 3日間
+    tasks:
+      - Lark Baseワークスペース作成
+      - 管理者アカウント設定
+      - チームメンバー招待
+      - 基本設定（タイムゾーン、言語）
+      
+  phase1_foundation:
+    duration: 2週間
+    description: データ基盤構築（C1-C3）
+    
+  phase2_automation:
+    duration: 1週間
+    description: 自動化実装（C4-C5）
+    
+  phase3_optimization:
+    duration: 1週間
+    description: 可視化・最適化（C6-C7）
+    
+  phase4_operation:
+    duration: 1週間
+    description: 運用準備（C8-C10）
