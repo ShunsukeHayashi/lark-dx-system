@@ -1,151 +1,240 @@
-# Lark DX System - Digital Transformation Management Platform
+# Lark Base Builder with GitHub Actions
 
-## 概要 / Overview
+このプロジェクトは、GitHub ActionsとClaude Codeを使用してLark Base統合管理システムを自動構築するためのフレームワークです。
 
-Lark DX（Digital Transformation）システムは、Lark Base プラットフォームを活用した包括的なDXコンサルティング管理システムです。このプロジェクトは、ドキュメント駆動開発アプローチを採用し、企業のデジタル変革を効率的に管理・追跡するための統合ソリューションを提供します。
+## 🎉 アップデート情報
 
-This is a comprehensive DX (Digital Transformation) consulting management system built on the Lark Base platform. The project employs a documentation-driven development approach to provide an integrated solution for efficiently managing and tracking enterprise digital transformation.
+**2025年7月版**: Claude Code GitHub ActionsがMAX Subscriptionに対応しました！
+- 従量課金APIに加えて、Claude MAX（月額$20）でも利用可能
+- 追加料金なしでGitHub Actionsを実行できます
 
-## 🎯 プロジェクト目標 / Project Goals
+## 概要
 
-- **業界**: DXコンサルティング
-- **対象規模**: 10-50名のユーザー、100社以上の顧客企業
-- **月間処理**: 200-500件のトランザクション
-- **主要機能**:
-  - 顧客管理（Customer Management）
-  - 案件管理（Project Management）
-  - タスク管理（Task Management）
-  - 効果測定（Effect Measurement）
-  - ダッシュボード分析（Dashboard Analytics）
+- **自動化**: Claude AIを活用した設計書の自動生成
+- **並列処理**: Git worktreeとmatrix戦略による効率的な並列実行
+- **モジュール化**: C1-C10のコマンドで段階的にシステムを構築
+- **再利用可能**: 業界・業務領域をパラメータ化
 
-## 📚 ドキュメント構成 / Documentation Structure
+## セットアップ
 
-```
-lark-dx-system/
-├── README.md                     # プロジェクト概要（本ファイル）
-├── CLAUDE.md                     # Claude Code用ガイドライン
-├── claude.md                     # Lark Base実装フレームワーク（105KB）
-├── lark-dx-system-design.md      # システム設計仕様書
-└── .claude/Instructions/
-    ├── workflow.md               # LDD（Log-Driven Development）方法論
-    ├── metrics.md                # メトリクス収集・分析システム
-    ├── logging.md                # 構造化ログフレームワーク
-    └── feedback.md               # 継続的改善システム
-```
+### 1. 認証設定
 
-## 🚀 実装フェーズ / Implementation Phases
+#### オプション1: MAX Subscription（推奨）
 
-### コマンドスタック（C1-C10）
+Claude MAX（月額$20）をお持ちの方は、追加料金なしで利用できます。
 
-1. **C1: システム構造分析・設計** - System analysis and design
-2. **C2: フィールド設計・実装** - Field design and implementation  
-3. **C3: リレーション構築** - Relationship building
-4. **C4: ワークフロー実装** - Workflow implementation
-5. **C5: ボタン実装** - Button implementation
-6. **C6: ビュー作成** - View creation
-7. **C7: ダッシュボード構築** - Dashboard construction
-8. **C8: 権限設定** - Permission settings
-9. **C9: テスト・検証** - Testing and validation
-10. **C10: デプロイ・移行** - Deployment and migration
+1. **トークンの生成**
+   ```bash
+   claude setup-token
+   ```
+   - ブラウザで認証画面が開きます
+   - 「承認する」をクリック
+   - 表示された認証コードをターミナルに貼り付け
+   - トークン（`sk-ant-oat01-...`）が生成されます
 
-### 実行方法 / Execution Method
+2. **GitHubへの登録**
+   - リポジトリの `Settings` → `Secrets and variables` → `Actions`
+   - `New repository secret` をクリック
+   - 名前: `CLAUDE_CODE_OAUTH_TOKEN`
+   - 値: 生成されたトークン
+
+#### オプション2: Anthropic API（従量課金）
+
+1. [Anthropic Console](https://console.anthropic.com)でアカウントを作成
+2. API Keysセクションで新しいキーを生成
+3. GitHubに登録：
+   - 名前: `ANTHROPIC_API_KEY`
+   - 値: `sk-ant-api03-...`（取得したAPIキー）
+
+### 2. ワークフローの選択
+
+#### MAX Subscription版（推奨）
+`Lark Base Builder with MAX Subscription` を使用
+
+#### 従量課金版
+`Lark Base Builder with Claude Code Base Action` を使用
+
+### 3. ワークフローの実行
+
+1. リポジトリの `Actions` タブに移動
+2. 使用するワークフローを選択
+3. `Run workflow` をクリック
+4. 以下のパラメータを入力：
+   - **対象の業界**: 例: 小売業、製造業、サービス業
+   - **対象の業務領域**: 例: 在庫管理、顧客管理、プロジェクト管理
+   - **Claudeモデル**: 使用するモデル（デフォルト: claude-3-haiku-20240307）
+     - `claude-3-haiku-20240307`: 最速・開発向け
+     - `claude-3-sonnet-20240229`: バランス型
+     - `claude-3-opus-20240229`: 最高性能
+   - **MAX Subscriptionを使用**（MAX版のみ）: true/false
+
+## ワークフローの構成
+
+### 並列トラック
+
+ワークフローは4つの並列トラックで実行されます：
+
+| トラック | コマンド | 説明 |
+|---------|---------|------|
+| DataFoundation | C1→C2→C3 | システム分析、フィールド設計、リレーション構築 |
+| Automation | C4→C5 | ワークフロー、ボタン実装 |
+| Visualization | C6→C7 | ビュー作成、ダッシュボード構築 |
+| OperationalReady | C8→C9→C10 | 権限設定、テスト、デプロイ |
+
+### コマンド詳細
+
+#### データ基盤トラック
+- **C1**: システム構造分析・設計
+  - 要件定義 (`requirement_spec.yaml`)
+  - データ構造設計 (`table_design.yaml`)
+
+- **C2**: フィールド設計・実装
+  - 主キー設計 (`primary_key_design.json`)
+  - マスターフィールド (`master_fields.json`)
+  - トランザクションフィールド (`transaction_fields.json`)
+  - 数式フィールド (`formula_fields.json`)
+
+- **C3**: リレーション構築
+  - 可視性最適化 (`visibility_optimization.json`)
+  - 双方向リンク (`bidirectional_links.json`)
+  - ルックアップフィールド (`lookup_fields.json`)
+
+#### 自動化トラック
+- **C4**: ワークフロー実装
+  - アラートワークフロー (`alert_workflow.json`)
+  - 承認ワークフロー (`approval_workflow.json`)
+  - プロセスワークフロー (`process_workflow.json`)
+
+- **C5**: ボタン実装
+  - クイック作成ボタン (`quick_create_button.json`)
+  - 外部連携ボタン (`external_link_button.json`)
+  - 一括処理ボタン (`batch_process_button.json`)
+
+#### 可視化トラック
+- **C6**: ビュー作成
+  - グリッドビュー (`grid_views.json`)
+  - カンバンビュー (`kanban_views.json`)
+  - カレンダービュー (`calendar_views.json`)
+
+- **C7**: ダッシュボード構築
+  - KPIカード (`kpi_cards.json`)
+  - メイングラフ (`main_charts.json`)
+  - アクションテーブル (`action_tables.json`)
+
+#### 運用準備トラック
+- **C8**: 権限設定
+  - ロール定義 (`role_definition.yaml`)
+  - テーブル権限 (`table_permissions.json`)
+  - フィールド権限 (`field_permissions.json`)
+
+- **C9**: テスト・検証
+  - 単体テスト結果 (`unit_test_results.yaml`)
+  - 統合テスト結果 (`integration_test_results.yaml`)
+  - パフォーマンステスト結果 (`performance_test_results.yaml`)
+
+- **C10**: デプロイ・移行
+  - 移行ログ (`migration_log.yaml`)
+  - ユーザー設定完了 (`user_setup_complete.yaml`)
+  - 本番稼働チェックリスト (`go_live_checklist.yaml`)
+
+## カスタムコマンドの使用
+
+プロジェクトには再利用可能なカスタムコマンドが含まれています：
 
 ```bash
-# 個別コマンド実行
-C[number] run
+# システム分析を実行
+/c1-system-analysis [業界] [業務領域]
 
-# 全体実装
-ALL RUN
+# フィールド設計を実行
+/c2-field-implementation
 
-# フェーズ別実装
-Phase 1 (基盤): C1 → C2 → C3
-Phase 2 (自動化): C4 → C5
-Phase 3 (最適化): C6 → C7
-Phase 4 (運用): C8 → C9 → C10
+# リレーション構築を実行
+/c3-relation-setup
+
+# 他のコマンドも同様に使用可能
 ```
 
-## 🔧 技術仕様 / Technical Specifications
+## 成果物
 
-### Lark Base 設計原則
+ワークフローの実行により、以下が生成されます：
 
-#### フィールドタイプ
-- **主キー**: 最左端カラムに配置
-- **マスターテーブル**: 直接入力型主キー
-- **トランザクションテーブル**: 数式結合型複合キー
-- **日付形式**: YYYY-MM-DD
-- **区切り文字**: アンダースコア（_）
+1. **設計書**: 各コマンドに対応するJSON/YAMLファイル
+2. **ブランチ**: 各トラック用のフィーチャーブランチ
+3. **アーティファクト**: Actions画面からダウンロード可能な成果物
 
-#### カラーコーディング標準
-- ❤️ 赤: 緊急・危険（行1、位置1）
-- 🟡 黄: 警告・注意（行1、位置3）
-- 💚 緑: 正常・完了（行1、位置5）
-- 🔵 青: 情報・処理中（行1、位置7）
-- 🤍 灰: 非アクティブ・保留（行1、位置11）
+## ローカル開発
 
-### ワークフローパターン
-- **アラートワークフロー**: 毎日09:00に定期実行
-- **承認ワークフロー**: 3営業日の期限設定
-- **プロセス自動化**: ステータスベースのトリガー
+### Git Worktreeを使用した並列開発
 
-## 📊 期待される効果 / Expected Benefits
+```bash
+# 新しいworktreeを作成
+git worktree add ../Lark-feature -b feature/local-development
 
-### 即時効果
-- 検索作業時間: 90%削減
-- 入力エラー: 80%削減
-- プロセス自動化率: 70%以上
+# worktreeに移動
+cd ../Lark-feature
 
-### 長期効果
-- 処理能力: 3倍向上
-- 年間コスト削減: 数百万円規模
-- ROI: 6ヶ月で投資回収
+# Claude Codeを実行
+claude
 
-## 🛠 開発環境 / Development Environment
+# カスタムコマンドを使用
+/c1-system-analysis 小売業 在庫管理
+```
 
-- **プラットフォーム**: Lark Base
-- **開発手法**: Log-Driven Development (LDD)
-- **バージョン管理**: Git / GitHub
-- **ドキュメント**: Markdown形式
+### worktreeの管理
 
-## 📝 開発ガイドライン / Development Guidelines
+```bash
+# worktree一覧を表示
+git worktree list
 
-1. **ログ駆動開発の遵守**
-   - 全ての活動をログに記録
-   - メトリクスベースの意思決定
-   - 継続的なフィードバックループ
+# 不要になったworktreeを削除
+git worktree remove ../Lark-feature
+```
 
-2. **命名規則**
-   - テーブル名: 日本語（例：顧客マスタ）
-   - フィールド名: 日本語（例：会社名）
-   - ワークフロー名: 用途を明確に（例：在庫切れ予測アラート）
+## 料金について
 
-3. **テスト要件**
-   - 単体テスト: 各機能の個別検証
-   - 統合テスト: エンドツーエンドの検証
-   - パフォーマンステスト: 大量データでの動作確認
+### 料金体系
 
-## 🚦 プロジェクトステータス / Project Status
+| プラン | 月額料金 | API料金 | 用途 |
+|--------|----------|---------|------|
+| MAX Subscription | $20/月 | なし | 個人開発・小規模チーム |
+| Anthropic API | なし | 従量課金 | 大規模・商用利用 |
 
-- [x] プロジェクト初期化
-- [x] GitHub リポジトリ作成
-- [ ] システム設計（C1）
-- [ ] フィールド実装（C2）
-- [ ] リレーション構築（C3）
-- [ ] ワークフロー実装（C4-C5）
-- [ ] UI/UX最適化（C6-C7）
-- [ ] 運用準備（C8-C10）
+### API料金（従量課金の場合）
 
-## 👥 コントリビューション / Contributing
+| モデル | 入力 (1Mトークン) | 出力 (1Mトークン) | 用途 |
+|--------|-------------------|-------------------|------|
+| Claude 3 Haiku | $0.25 | $1.25 | 開発・テスト |
+| Claude 3 Sonnet | $3.00 | $15.00 | 本番環境 |
+| Claude 3 Opus | $15.00 | $75.00 | 高精度が必要な場合 |
 
-このプロジェクトはLark DX社の内部プロジェクトです。貢献方法については、プロジェクトマネージャーにお問い合わせください。
+### コスト最適化のヒント
 
-## 📄 ライセンス / License
+1. **MAX Subscriptionの活用**（月額固定で使い放題）
+2. **開発時はHaikuを使用**
+3. **必要なトラックのみ実行**
 
-Proprietary - Lark DX Company
+## トラブルシューティング
 
-## 📞 お問い合わせ / Contact
+### APIキーエラー
+- `ANTHROPIC_API_KEY`シークレットが正しく設定されているか確認
+- APIキーの有効性を確認
 
-プロジェクトに関するお問い合わせは、Lark DX社のプロジェクトチームまでご連絡ください。
+### ワークフロー失敗
+- Actionsログで詳細なエラーメッセージを確認
+- 各ジョブのステップごとの出力を確認
 
----
+### 依存関係エラー
+- Claude CLIのインストールステップが成功しているか確認
+- ネットワーク接続を確認
 
-最終更新日: 2025-01-20
+## 貢献
+
+プロジェクトへの貢献を歓迎します：
+
+1. Issueで改善提案や問題報告
+2. Pull Requestで機能追加や修正
+3. ドキュメントの改善
+
+## ライセンス
+
+このプロジェクトはMITライセンスの下で公開されています。

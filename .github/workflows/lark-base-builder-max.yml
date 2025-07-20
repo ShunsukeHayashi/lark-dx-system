@@ -1,0 +1,334 @@
+name: 'Lark Base Builder with MAX Subscription'
+
+on:
+  workflow_dispatch:
+    inputs:
+      industry:
+        description: '対象の業界 (例: 小売業, 製造業)'
+        required: true
+        default: 'サンプル業界'
+      business_domain:
+        description: '対象の業務領域 (例: 顧客管理, 在庫管理)'
+        required: true
+        default: 'サンプル業務'
+      claude_model:
+        description: 'Claudeモデル'
+        required: false
+        default: 'claude-3-haiku-20240307'
+        type: choice
+        options:
+          - claude-3-haiku-20240307
+          - claude-3-sonnet-20240229
+          - claude-3-opus-20240229
+      use_max_subscription:
+        description: 'MAX Subscriptionを使用'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  build-lark-base-in-parallel:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        track:
+          - name: 'DataFoundation'
+            description: 'C1 -> C2 -> C3 (データ基盤)'
+            commands: "C1,C2,C3"
+          - name: 'Automation'
+            description: 'C4 -> C5 (自動化)'
+            commands: "C4,C5"
+          - name: 'Visualization'
+            description: 'C6 -> C7 (可視化)'
+            commands: "C6,C7"
+          - name: 'OperationalReady'
+            description: 'C8 -> C9 -> C10 (運用準備)'
+            commands: "C8,C9,C10"
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # =================================================================
+      # C1: システム構造分析・設計 (DataFoundation トラックのみ実行)
+      # =================================================================
+      - name: 'C1: System Analysis & Design'
+        if: contains(matrix.track.commands, 'C1')
+        uses: anthropics/claude-code-base-action@beta
+        with:
+          prompt: |
+            あなたはLark Baseの専門家です。以下の要件定義とデータ構造設計を行ってください。
+            
+            # 入力情報
+            - 業界: ${{ github.event.inputs.industry }}
+            - 業務領域: ${{ github.event.inputs.business_domain }}
+            
+            ## T1: 要件定義
+            requirement_spec.yamlというファイルを作成し、以下の項目を定義してください：
+            - アプリケーション名: ${{ github.event.inputs.industry }}${{ github.event.inputs.business_domain }}統合管理システム
+            - 主要業務、利用者数、管理対象数など
+            
+            ## T2: データ構造設計
+            table_design.yamlというファイルを作成し、マスターテーブル、トランザクションテーブル、関連テーブルを設計してください。
+          model: ${{ github.event.inputs.claude_model }}
+          allowed_tools: "Write,View"
+          # MAX Subscriptionまたは従量課金APIを選択
+          anthropic_api_key: ${{ github.event.inputs.use_max_subscription != 'true' && secrets.ANTHROPIC_API_KEY || '' }}
+          claude_code_oauth_token: ${{ github.event.inputs.use_max_subscription == 'true' && secrets.CLAUDE_CODE_OAUTH_TOKEN || '' }}
+          
+      # =================================================================
+      # C2: フィールド設計・実装 (DataFoundation トラックのみ実行)
+      # =================================================================
+      - name: 'C2: Field Implementation'
+        if: contains(matrix.track.commands, 'C2')
+        uses: anthropics/claude-code-base-action@beta
+        with:
+          prompt: |
+            Lark Baseのフィールド設計を行います。
+            
+            ## T0: 主キー設計
+            primary_key_design.jsonを作成：
+            - マスターテーブル: テキスト型（直接入力）、最左端配置
+            - トランザクションテーブル: 数式型（日付_エンティティ_説明）
+            
+            ## T1: マスターフィールド
+            master_fields.jsonを作成：
+            - ID、名称、カテゴリ（単一選択）、ステータス、数値データ、日付、担当者など
+            
+            ## T2: トランザクションフィールド
+            transaction_fields.jsonを作成：
+            - 処理番号、ステータス、優先度、金額、期日、フラグなど
+            
+            ## T3: 数式フィールド
+            formula_fields.jsonを作成：
+            - 残日数計算、在庫予測、達成率、アラート判定など
+          model: ${{ github.event.inputs.claude_model }}
+          allowed_tools: "Write,View"
+          anthropic_api_key: ${{ github.event.inputs.use_max_subscription != 'true' && secrets.ANTHROPIC_API_KEY || '' }}
+          claude_code_oauth_token: ${{ github.event.inputs.use_max_subscription == 'true' && secrets.CLAUDE_CODE_OAUTH_TOKEN || '' }}
+
+      # =================================================================
+      # C3: リレーション構築 (DataFoundation トラックのみ実行)
+      # =================================================================
+      - name: 'C3: Relation Setup'
+        if: contains(matrix.track.commands, 'C3')
+        uses: anthropics/claude-code-base-action@beta
+        with:
+          prompt: |
+            テーブル間の双方向リンクを設定します。
+            
+            ## T0: 可視性チェック
+            visibility_optimization.jsonを作成：
+            - 双方向リンクの表示設定
+            - ルックアップフィールドの追加
+            - リンクプレビューの最適化
+            
+            ## T2: リンク作成
+            bidirectional_links.jsonを作成：
+            - 注文→商品マスタ（多:1）
+            - 注文→取引先マスタ（多:1）
+            - タスク→プロジェクト（多:多）
+            
+            ## T3: ルックアップ作成
+            lookup_fields.jsonを作成：
+            - 商品単価、取引先情報、関連集計など
+          model: ${{ github.event.inputs.claude_model }}
+          allowed_tools: "Write,View"
+          anthropic_api_key: ${{ github.event.inputs.use_max_subscription != 'true' && secrets.ANTHROPIC_API_KEY || '' }}
+          claude_code_oauth_token: ${{ github.event.inputs.use_max_subscription == 'true' && secrets.CLAUDE_CODE_OAUTH_TOKEN || '' }}
+
+      # =================================================================
+      # C4: ワークフロー実装 (Automation トラックのみ実行)
+      # =================================================================
+      - name: 'C4: Workflow Automation'
+        if: contains(matrix.track.commands, 'C4')
+        uses: anthropics/claude-code-base-action@beta
+        with:
+          prompt: |
+            自動化ワークフローを構築します。
+            
+            ## T1: アラートワークフロー
+            alert_workflow.jsonを作成：
+            - 在庫切れ予測アラート（定期実行、条件判定、通知送信）
+            
+            ## T2: 承認ワークフロー
+            approval_workflow.jsonを作成：
+            - 金額承認フロー（承認リクエスト、ステータス更新、リマインダー）
+            
+            ## T3: プロセスワークフロー
+            process_workflow.jsonを作成：
+            - 自動処理フロー（関連更新、ステータス変更、次工程開始）
+          model: ${{ github.event.inputs.claude_model }}
+          allowed_tools: "Write,View"
+          anthropic_api_key: ${{ github.event.inputs.use_max_subscription != 'true' && secrets.ANTHROPIC_API_KEY || '' }}
+          claude_code_oauth_token: ${{ github.event.inputs.use_max_subscription == 'true' && secrets.CLAUDE_CODE_OAUTH_TOKEN || '' }}
+
+      # =================================================================
+      # C5: ボタン実装 (Automation トラックのみ実行)
+      # =================================================================
+      - name: 'C5: Button Implementation'
+        if: contains(matrix.track.commands, 'C5')
+        uses: anthropics/claude-code-base-action@beta
+        with:
+          prompt: |
+            アクションボタンを設定します。
+            
+            ## T1: クイック作成ボタン
+            quick_create_button.jsonを作成：
+            - 🚀簡易作成ボタン（現在レコード情報取得、新規作成、通知）
+            
+            ## T2: 外部連携ボタン
+            external_link_button.jsonを作成：
+            - 📞外部連携ボタン（連絡先取得、アプリ起動、履歴記録）
+            
+            ## T3: 一括処理ボタン
+            batch_process_button.jsonを作成：
+            - 📊一括処理ボタン（対象特定、一括更新、結果集計）
+          model: ${{ github.event.inputs.claude_model }}
+          allowed_tools: "Write,View"
+          anthropic_api_key: ${{ github.event.inputs.use_max_subscription != 'true' && secrets.ANTHROPIC_API_KEY || '' }}
+          claude_code_oauth_token: ${{ github.event.inputs.use_max_subscription == 'true' && secrets.CLAUDE_CODE_OAUTH_TOKEN || '' }}
+
+      # =================================================================
+      # C6: ビュー作成 (Visualization トラックのみ実行)
+      # =================================================================
+      - name: 'C6: View Creation'
+        if: contains(matrix.track.commands, 'C6')
+        uses: anthropics/claude-code-base-action@beta
+        with:
+          prompt: |
+            各種ビューを作成・設定します。
+            
+            ## T1: グリッドビュー
+            grid_views.jsonを作成：
+            - 管理者用、担当者用、分析用ビュー（フィルター、ソート、条件付き書式）
+            
+            ## T2: カンバンビュー
+            kanban_views.jsonを作成：
+            - プロセス管理カンバン（ステータス別、カード表示、WIP制限）
+            
+            ## T3: カレンダービュー
+            calendar_views.jsonを作成：
+            - スケジュールカレンダー（日付表示、イベント内容、色分け）
+          model: ${{ github.event.inputs.claude_model }}
+          allowed_tools: "Write,View"
+          anthropic_api_key: ${{ github.event.inputs.use_max_subscription != 'true' && secrets.ANTHROPIC_API_KEY || '' }}
+          claude_code_oauth_token: ${{ github.event.inputs.use_max_subscription == 'true' && secrets.CLAUDE_CODE_OAUTH_TOKEN || '' }}
+
+      # =================================================================
+      # C7: ダッシュボード構築 (Visualization トラックのみ実行)
+      # =================================================================
+      - name: 'C7: Dashboard Creation'
+        if: contains(matrix.track.commands, 'C7')
+        uses: anthropics/claude-code-base-action@beta
+        with:
+          prompt: |
+            分析ダッシュボードを構築します。
+            
+            ## T1: KPIカード
+            kpi_cards.jsonを作成：
+            - 🚨緊急対応件数、💰本日売上、📈達成率、⏱️平均処理時間
+            
+            ## T2: メイングラフ
+            main_charts.jsonを作成：
+            - 月別推移折れ線、カテゴリ別棒グラフ、構成比円グラフ
+            
+            ## T3: アクションテーブル
+            action_tables.jsonを作成：
+            - 要対応リスト（フィルター、表示項目、アクションボタン）
+          model: ${{ github.event.inputs.claude_model }}
+          allowed_tools: "Write,View"
+          anthropic_api_key: ${{ github.event.inputs.use_max_subscription != 'true' && secrets.ANTHROPIC_API_KEY || '' }}
+          claude_code_oauth_token: ${{ github.event.inputs.use_max_subscription == 'true' && secrets.CLAUDE_CODE_OAUTH_TOKEN || '' }}
+
+      # =================================================================
+      # C8: 権限設定 (OperationalReady トラックのみ実行)
+      # =================================================================
+      - name: 'C8: Permission Setup'
+        if: contains(matrix.track.commands, 'C8')
+        uses: anthropics/claude-code-base-action@beta
+        with:
+          prompt: |
+            階層的な権限を設定します。
+            
+            ## T1: ロール定義
+            role_definition.yamlを作成：
+            - 5段階の権限ロール（Admin、Manager、Editor、Contributor、Viewer）
+            
+            ## T2: テーブル権限
+            table_permissions.jsonを作成：
+            - マスターデータとトランザクションデータの権限マトリックス
+            
+            ## T3: フィールド権限
+            field_permissions.jsonを作成：
+            - 原価・仕入値、個人情報、財務情報の表示・編集権限
+          model: ${{ github.event.inputs.claude_model }}
+          allowed_tools: "Write,View"
+          anthropic_api_key: ${{ github.event.inputs.use_max_subscription != 'true' && secrets.ANTHROPIC_API_KEY || '' }}
+          claude_code_oauth_token: ${{ github.event.inputs.use_max_subscription == 'true' && secrets.CLAUDE_CODE_OAUTH_TOKEN || '' }}
+
+      # =================================================================
+      # C9: テスト・検証 (OperationalReady トラックのみ実行)
+      # =================================================================
+      - name: 'C9: Testing & Validation'
+        if: contains(matrix.track.commands, 'C9')
+        uses: anthropics/claude-code-base-action@beta
+        with:
+          prompt: |
+            システムの動作確認と検証を行います。
+            
+            ## T1: 単体テスト
+            unit_test_results.yamlを作成：
+            - フィールド計算、リンク整合性、ワークフロー動作など
+            
+            ## T2: 統合テスト
+            integration_test_results.yamlを作成：
+            - エンドツーエンドプロセス、データフロー、通知動作など
+            
+            ## T3: パフォーマンステスト
+            performance_test_results.yamlを作成：
+            - 大量データ表示、数式計算、同時アクセスなど
+          model: ${{ github.event.inputs.claude_model }}
+          allowed_tools: "Write,View"
+          anthropic_api_key: ${{ github.event.inputs.use_max_subscription != 'true' && secrets.ANTHROPIC_API_KEY || '' }}
+          claude_code_oauth_token: ${{ github.event.inputs.use_max_subscription == 'true' && secrets.CLAUDE_CODE_OAUTH_TOKEN || '' }}
+
+      # =================================================================
+      # C10: デプロイ・移行 (OperationalReady トラックのみ実行)
+      # =================================================================
+      - name: 'C10: Deployment'
+        if: contains(matrix.track.commands, 'C10')
+        uses: anthropics/claude-code-base-action@beta
+        with:
+          prompt: |
+            本番環境への展開を行います。
+            
+            ## T1: データ移行
+            migration_log.yamlを作成：
+            - データクレンジング、インポート、整合性確認など
+            
+            ## T2: ユーザー設定
+            user_setup_complete.yamlを作成：
+            - アカウント作成、権限割り当て、通知設定など
+            
+            ## T3: 本番稼働
+            go_live_checklist.yamlを作成：
+            - 最終確認、バックアップ、監視設定など
+          model: ${{ github.event.inputs.claude_model }}
+          allowed_tools: "Write,View"
+          anthropic_api_key: ${{ github.event.inputs.use_max_subscription != 'true' && secrets.ANTHROPIC_API_KEY || '' }}
+          claude_code_oauth_token: ${{ github.event.inputs.use_max_subscription == 'true' && secrets.CLAUDE_CODE_OAUTH_TOKEN || '' }}
+
+      # =================================================================
+      # アーティファクト保存
+      # =================================================================
+      - name: Upload Artifacts for ${{ matrix.track.name }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: design-artifacts-${{ matrix.track.name }}
+          path: |
+            *.yaml
+            *.yml
+            *.json
+          if-no-files-found: warn

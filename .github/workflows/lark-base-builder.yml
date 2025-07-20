@@ -1,0 +1,661 @@
+name: 'Lark Base Builder with Parallel Claude Code'
+
+on:
+  workflow_dispatch:
+    inputs:
+      industry:
+        description: '対象の業界 (例: 小売業, 製造業)'
+        required: true
+        default: 'サンプル業界'
+      business_domain:
+        description: '対象の業務領域 (例: 顧客管理, 在庫管理)'
+        required: true
+        default: 'サンプル業務'
+      github_branch:
+        description: 'このワークフローを実行するブランチ'
+        required: true
+        default: 'main'
+      claude_model:
+        description: 'Claudeモデル (claude-3-opus-20240229, claude-3-sonnet-20240229, claude-3-haiku-20240307)'
+        required: false
+        default: 'claude-3-haiku-20240307'
+
+jobs:
+  build-lark-base-in-parallel:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        track:
+          - name: 'DataFoundation'
+            description: 'C1 -> C2 -> C3 (データ基盤)'
+            commands: "C1,C2,C3"
+          - name: 'Automation'
+            description: 'C4 -> C5 (自動化)'
+            commands: "C4,C5"
+          - name: 'Visualization'
+            description: 'C6 -> C7 (可視化)'
+            commands: "C6,C7"
+          - name: 'OperationalReady'
+            description: 'C8 -> C9 -> C10 (運用準備)'
+            commands: "C8,C9,C10"
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.github_branch }}
+          fetch-depth: 0
+
+      - name: Setup Git User
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Create Worktree for Track (${{ matrix.track.name }})
+        run: |
+          BRANCH_NAME="feature/lark-build/${{ matrix.track.name }}-${{ github.run_id }}"
+          git worktree add ./worktrees/${{ matrix.track.name }} -b ${BRANCH_NAME}
+          echo "WORKTREE_PATH=./worktrees/${{ matrix.track.name }}" >> $GITHUB_ENV
+          echo "WORKTREE_BRANCH=${BRANCH_NAME}" >> $GITHUB_ENV
+
+      - name: Install Claude CLI
+        run: |
+          curl -fsSL https://storage.googleapis.com/anthropic-public/claude-cli/install.sh | bash
+          echo "$HOME/.claude/bin" >> $GITHUB_PATH
+        
+      # =================================================================
+      # C1: システム構造分析・設計 (DataFoundation トラックのみ実行)
+      # =================================================================
+      - name: 'C1: System Analysis & Design'
+        if: contains(matrix.track.commands, 'C1')
+        run: |
+          claude -p "
+          # 指示
+          あなたはLark Baseの専門家です。以下の要件定義とデータ構造設計を行ってください。
+          出力は YAML 形式で、それぞれ requirement_spec.yaml と table_design.yaml というファイル名で保存してください。
+
+          # 入力情報
+          - 業界: ${{ github.event.inputs.industry }}
+          - 業務領域: ${{ github.event.inputs.business_domain }}
+
+          ## T1: 要件定義
+          以下の項目を具体的に定義してください：
+          - アプリケーション名: ${{ github.event.inputs.industry }}${{ github.event.inputs.business_domain }}統合管理システム
+          - 主要業務: 主要業務1, 主要業務2, 主要業務3
+          - 利用者数: 5-50名
+          - 管理対象数: 1000+（継続増加見込み）
+          - 取引先数: 100社
+          - チャネル数: 5
+          - 月間処理件数: 1000-5000件
+
+          ## T2: データ構造設計
+          以下のテーブル構造を設計してください：
+          1. マスターテーブル（静的データ）
+             - 商品/サービスマスタ
+             - 取引先マスタ
+             - カテゴリマスタ
+          2. トランザクションテーブル（動的データ）
+             - 注文/依頼テーブル
+             - 処理/作業テーブル
+             - 履歴テーブル
+          3. 関連テーブル
+             - 分析用テーブル
+             - 設定テーブル
+          "
+        working-directory: ${{ env.WORKTREE_PATH }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_MODEL: ${{ github.event.inputs.claude_model }}
+          
+      # =================================================================
+      # C2: フィールド設計・実装 (DataFoundation トラックのみ実行)
+      # =================================================================
+      - name: 'C2: Field Implementation'
+        if: contains(matrix.track.commands, 'C2')
+        run: |
+          # T0: 主キー設定
+          claude -p "
+          あなたはLark Baseの専門家です。各テーブルの主キーフィールドを設計・実装してください。
+          出力は primary_key_design.json として保存してください。
+
+          1. マスターテーブルの主キー設定
+             - フィールド名: エンティティ名
+             - タイプ: テキスト（直接入力）
+             - 位置: 最左端
+             - 制約: 必須、ユニーク
+
+          2. トランザクションテーブルの主キー設定
+             - フィールド名: トランザクションID
+             - タイプ: 数式
+             - 数式: CONCATENATE(TEXT(日付, 'YYYY-MM-DD'), '_', 関連エンティティ, '_', LEFT(説明, 20))
+             - 位置: 最左端
+             - 表示例: '2024-01-15_ABC商事_定期メンテナンス実施'
+
+          3. プレビュー設定
+             - 各リンクフィールドで表示する情報を3つまで選択
+             - 優先順位: ID > ステータス > 金額/数量
+          "
+          
+          # T1: マスターフィールド
+          claude -p "
+          あなたはLark Baseの専門家です。マスターテーブルのフィールド設計を master_fields.json として出力してください。
+
+          マスタテーブルに以下のフィールドを作成してください：
+          - ID（テキスト/自動採番）: 形式を指定
+          - 名称（テキスト）: 名称
+          - カテゴリ（単一選択）:
+            選択肢: カテゴリ1, カテゴリ2, カテゴリ3
+            色: 標準色パレット使用（1行目の色）
+          - ステータス（単一選択）:
+            - 有効: 🟢緑（1行目5番目）
+            - 無効: 🤍グレー（1行目11番目）
+          - 数値データ（数値/通貨）: 単価, 在庫数
+          - 日付（日付）: 登録日, 更新日
+          - 担当者（ユーザー）: 単一選択
+          - 備考（テキスト）: 複数行
+          "
+
+          # T2: トランザクションフィールド
+          claude -p "
+          あなたはLark Baseの専門家です。トランザクションテーブルのフィールド設計を transaction_fields.json として出力してください。
+
+          トランザクションテーブルに以下のフィールドを作成してください：
+          - 処理番号（自動採番）: プレフィックス-YYYYMMDD-0001形式
+          - ステータス（単一選択）:
+            - 新規: 🔵青
+            - 処理中: 🟡黄
+            - 完了: 🟢緑
+            - キャンセル: 🤍グレー
+            - エラー: ❤️赤
+          - 優先度（単一選択）:
+            - 緊急: ❤️赤
+            - 高: 🟡黄
+            - 中: 🔵青
+            - 低: 🤍グレー
+          - 金額関連（通貨）: 金額, 税額, 合計
+          - 期日（日付）: 開始日, 期限, 完了日
+          - フラグ（チェックボックス）: 緊急フラグ, 承認フラグ
+          "
+
+          # T3: 数式フィールド
+          claude -p "
+          あなたはLark Baseの専門家です。数式フィールドの設計を formula_fields.json として出力してください。
+
+          以下の数式フィールドを作成してください：
+          1. 残日数計算:
+             IF(ステータス != '完了', 期限 - TODAY(), '完了済')
+          2. 在庫予測:
+             IF(在庫 / 日次平均 < 7, '🚨緊急発注',
+             IF(在庫 / 日次平均 < 14, '⚠️要確認', '✅正常'))
+          3. 達成率:
+             IF(目標 > 0, 実績 / 目標 * 100, 0)
+          4. アラート判定:
+             IF(残日数 < 0, '遅延',
+             IF(残日数 < 3, '期限間近', '正常'))
+          "
+        working-directory: ${{ env.WORKTREE_PATH }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_MODEL: ${{ github.event.inputs.claude_model }}
+
+      # =================================================================
+      # C3: リレーション構築 (DataFoundation トラックのみ実行)
+      # =================================================================
+      - name: 'C3: Relation Setup'
+        if: contains(matrix.track.commands, 'C3')
+        run: |
+          # T0: 可視性チェック
+          claude -p "
+          あなたはLark Baseの専門家です。リレーション設定後の可視性最適化設計を visibility_optimization.json として出力してください。
+
+          1. 双方向リンクの表示確認
+             - 親テーブル側: 関連レコード数の表示
+             - 子テーブル側: 親レコードの主要情報表示
+          2. ルックアップフィールドの追加
+             - 取引先から: 最終取引日、累計金額
+             - 商品から: 在庫数、単価
+             - プロジェクトから: 進捗率、期限
+          3. リンクプレビューの最適化
+             - 表示フィールド数: 3
+             - 表示順序の調整
+          "
+
+          # T2: リンク作成
+          claude -p "
+          あなたはLark Baseの専門家です。双方向リンク設計を bidirectional_links.json として出力してください。
+
+          以下の双方向リンクを作成してください：
+          1. 注文→商品マスタ（多:1）
+             - フィールド名: 商品名
+             - 参照テーブル: 商品マスタ
+             - 参照フィールド: 商品ID
+             - 選択可能数: 単一
+          2. 注文→取引先マスタ（多:1）
+             - フィールド名: 取引先名
+             - 参照テーブル: 取引先マスタ
+             - 参照フィールド: 取引先ID
+             - 選択可能数: 単一
+          3. タスク→プロジェクト（多:多）
+             - フィールド名: 関連プロジェクト
+             - 参照テーブル: プロジェクト
+             - 選択可能数: 複数
+          "
+
+          # T3: ルックアップ作成
+          claude -p "
+          あなたはLark Baseの専門家です。ルックアップフィールド設計を lookup_fields.json として出力してください。
+
+          リンクを使用したルックアップフィールドを作成：
+          1. 商品単価（ルックアップ）
+             - 参照: 商品.単価
+          2. 取引先情報（ルックアップ）
+             - 参照: 取引先.連絡先
+          3. 関連集計（ルックアップ＋集計）
+             - 参照: SUM(関連レコード.金額)
+          "
+        working-directory: ${{ env.WORKTREE_PATH }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_MODEL: ${{ github.event.inputs.claude_model }}
+
+      # =================================================================
+      # C4: ワークフロー実装 (Automation トラックのみ実行)
+      # =================================================================
+      - name: 'C4: Workflow Automation'
+        if: contains(matrix.track.commands, 'C4')
+        run: |
+          # T1: アラートワークフロー
+          claude -p "
+          あなたはLark Baseの専門家です。アラートワークフロー設計を alert_workflow.json として出力してください。
+
+          在庫切れ予測アラートワークフローを作成：
+          - トリガー: 定期実行（毎日 09:00）
+          - 対象: 商品マスタ
+          - 条件: 在庫予測 < 7
+          - アクション:
+            1. アラートステータス = '🚨要対応'
+            2. 通知: @担当者に'商品名の在庫が残り在庫予測日です'
+            3. タスク作成: 発注タスクテーブルに新規レコード
+          "
+
+          # T2: 承認ワークフロー
+          claude -p "
+          あなたはLark Baseの専門家です。承認ワークフロー設計を approval_workflow.json として出力してください。
+
+          金額承認ワークフローを作成：
+          - トリガー: ステータス = '承認申請'
+          - 条件: 金額 >= 承認必要金額
+          - アクション:
+            1. 承認リクエスト送信
+               - 承認者: 承認者フィールド
+               - 期限: 3営業日
+            2. 承認時: ステータス = '承認済', 承認日 = TODAY()
+            3. 否認時: ステータス = '差戻し', 通知送信
+            4. リマインダー: 1日後未承認なら再通知
+          "
+
+          # T3: プロセスワークフロー
+          claude -p "
+          あなたはLark Baseの専門家です。プロセスワークフロー設計を process_workflow.json として出力してください。
+
+          自動処理ワークフローを作成：
+          - トリガー: 実績入力フィールド更新時
+          - アクション:
+            1. 関連レコード更新
+               - 在庫 = 在庫 - 出荷数
+            2. ステータス更新
+               - 処理ステータス = '完了'
+               - 完了日 = TODAY()
+            3. 次工程開始
+               - 次工程テーブルに新規レコード作成
+               - 初期値設定
+          "
+        working-directory: ${{ env.WORKTREE_PATH }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_MODEL: ${{ github.event.inputs.claude_model }}
+
+      # =================================================================
+      # C5: ボタン実装 (Automation トラックのみ実行)
+      # =================================================================
+      - name: 'C5: Button Implementation'
+        if: contains(matrix.track.commands, 'C5')
+        run: |
+          # T1: クイック作成ボタン
+          claude -p "
+          あなたはLark Baseの専門家です。クイック作成ボタン設計を quick_create_button.json として出力してください。
+
+          🚀簡易作成ボタンを実装：
+          1. 配置: メインテーブルの各レコード
+          2. アクション:
+             - 現在のレコード情報を取得
+             - 関連テーブルに新規レコード作成
+             - デフォルト値を自動設定
+             - 作成完了通知表示
+          3. 表示条件: ステータス = '対象ステータス'
+          "
+
+          # T2: 外部連携ボタン
+          claude -p "
+          あなたはLark Baseの専門家です。外部連携ボタン設計を external_link_button.json として出力してください。
+
+          📞外部連携ボタンを実装：
+          1. 連絡先情報の取得
+          2. 外部アプリケーション起動
+             - URL: アプリスキーム://パラメータ
+          3. 連絡履歴の自動記録
+          4. 結果の更新
+          "
+
+          # T3: 一括処理ボタン
+          claude -p "
+          あなたはLark Baseの専門家です。一括処理ボタン設計を batch_process_button.json として出力してください。
+
+          📊一括処理ボタンを実装：
+          1. 対象レコードの特定
+             - 条件: フィルター条件
+          2. 一括更新実行
+             - ステータス更新
+             - 処理日記録
+          3. 処理結果の集計
+          4. 完了通知
+          "
+        working-directory: ${{ env.WORKTREE_PATH }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_MODEL: ${{ github.event.inputs.claude_model }}
+
+      # =================================================================
+      # C6: ビュー作成 (Visualization トラックのみ実行)
+      # =================================================================
+      - name: 'C6: View Creation'
+        if: contains(matrix.track.commands, 'C6')
+        run: |
+          # T1: グリッドビュー
+          claude -p "
+          あなたはLark Baseの専門家です。グリッドビュー設計を grid_views.json として出力してください。
+
+          業務別グリッドビューを作成：
+          1. 管理者用ビュー
+             - 全フィールド表示
+             - フィルター: なし
+             - ソート: 優先度降順, 期日昇順
+          2. 担当者用ビュー
+             - 表示: 必要フィールドのみ
+             - フィルター: 担当者 = CURRENT_USER()
+             - 条件付き書式: 期限による色分け
+          3. 分析用ビュー
+             - グループ化: カテゴリ
+             - 集計行表示
+          "
+
+          # T2: カンバンビュー
+          claude -p "
+          あなたはLark Baseの専門家です。カンバンビュー設計を kanban_views.json として出力してください。
+
+          プロセス管理カンバンビューを作成：
+          - グループ化: ステータス
+          - カード表示:
+            - タイトル: 案件名
+            - サブ情報: 担当者, 期限
+            - タグ: 優先度, カテゴリ
+          - 色分け: 緊急度
+          - WIP制限: 各列最大10件
+          "
+
+          # T3: カレンダービュー
+          claude -p "
+          あなたはLark Baseの専門家です。カレンダービュー設計を calendar_views.json として出力してください。
+
+          スケジュールカレンダービューを作成：
+          - 日付フィールド: 予定日
+          - イベント表示:
+            - タイトル
+            - 詳細情報
+          - 色分け: 種別による自動色分け
+          - フィルター: 有効フラグ = true
+          "
+        working-directory: ${{ env.WORKTREE_PATH }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_MODEL: ${{ github.event.inputs.claude_model }}
+
+      # =================================================================
+      # C7: ダッシュボード構築 (Visualization トラックのみ実行)
+      # =================================================================
+      - name: 'C7: Dashboard Creation'
+        if: contains(matrix.track.commands, 'C7')
+        run: |
+          # T1: KPIカード
+          claude -p "
+          あなたはLark Baseの専門家です。KPIカード設計を kpi_cards.json として出力してください。
+
+          KPIカードを作成（上部4枚）：
+          1. 🚨緊急対応件数
+             - 数式: COUNTIF(ステータス, '緊急')
+             - 色分け: 0=緑, 1-5=黄, 6+=赤
+          2. 💰本日売上
+             - 数式: SUMIF(日付, TODAY())
+             - 前日比表示
+          3. 📈達成率
+             - 数式: 実績/目標*100
+             - ゲージ表示
+          4. ⏱️平均処理時間
+             - 数式: AVG(完了日-開始日)
+             - トレンド矢印
+          "
+
+          # T2: メイングラフ
+          claude -p "
+          あなたはLark Baseの専門家です。メイングラフ設計を main_charts.json として出力してください。
+
+          メイングラフを作成：
+          1. 月別推移折れ線グラフ
+             - X軸: 月
+             - Y軸: 売上, 利益（複合）
+          2. カテゴリ別棒グラフ
+             - 降順ソート
+             - TOP10表示
+          3. 構成比円グラフ
+             - チャネル別売上構成
+          "
+
+          # T3: アクションテーブル
+          claude -p "
+          あなたはLark Baseの専門家です。アクションテーブル設計を action_tables.json として出力してください。
+
+          アクションテーブルを作成：
+          - 名称: 要対応リスト
+          - フィルター: ステータス IN ('緊急', '要確認')
+          - 表示項目: 案件名, 期限, 担当者, アクション
+          - ソート: 優先度降順, 期限昇順
+          - アクション: 各行にボタン配置
+          "
+        working-directory: ${{ env.WORKTREE_PATH }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_MODEL: ${{ github.event.inputs.claude_model }}
+
+      # =================================================================
+      # C8: 権限設定 (OperationalReady トラックのみ実行)
+      # =================================================================
+      - name: 'C8: Permission Setup'
+        if: contains(matrix.track.commands, 'C8')
+        run: |
+          # T1: ロール定義
+          claude -p "
+          あなたはLark Baseの専門家です。ロール定義を role_definition.yaml として出力してください。
+
+          5段階の権限ロールを定義：
+          1. 管理者（Admin）
+             - 全機能フルアクセス
+             - システム設定変更
+             - 権限管理
+          2. マネージャー（Manager）
+             - 承認権限
+             - レポート作成
+             - 部門間データ閲覧
+          3. 編集者（Editor）
+             - データ作成・編集
+             - 自部門データ管理
+          4. 投稿者（Contributor）
+             - データ作成
+             - 自分のデータ編集
+          5. 閲覧者（Viewer）
+             - データ閲覧のみ
+          "
+
+          # T2: テーブル権限
+          claude -p "
+          あなたはLark Baseの専門家です。テーブル権限設計を table_permissions.json として出力してください。
+
+          テーブル別権限マトリックスを設定：
+          - マスターデータ:
+            - Admin: CRUD全権限
+            - Manager: 読取・更新
+            - Editor: 読取・更新（制限付き）
+            - Contributor: 読取のみ
+            - Viewer: 読取のみ（機密除く）
+          - トランザクション:
+            - Admin: CRUD全権限
+            - Manager: CRU+承認
+            - Editor: CRU（自データ）
+            - Contributor: CR（自データ）
+            - Viewer: R（公開データ）
+          "
+
+          # T3: フィールド権限
+          claude -p "
+          あなたはLark Baseの専門家です。フィールド権限設計を field_permissions.json として出力してください。
+
+          フィールドレベル権限を設定：
+          1. 原価・仕入値
+             - 表示: Admin, Manager, 担当Editor
+             - 編集: Adminのみ
+          2. 個人情報
+             - 表示: Admin, 担当者
+             - 編集: Adminのみ
+          3. 財務情報
+             - 表示: Admin, 財務担当
+             - 編集: 財務担当のみ
+          "
+        working-directory: ${{ env.WORKTREE_PATH }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_MODEL: ${{ github.event.inputs.claude_model }}
+
+      # =================================================================
+      # C9: テスト・検証 (OperationalReady トラックのみ実行)
+      # =================================================================
+      - name: 'C9: Testing & Validation'
+        if: contains(matrix.track.commands, 'C9')
+        run: |
+          # T1: 単体テスト
+          claude -p "
+          あなたはLark Baseの専門家です。単体テスト結果を unit_test_results.yaml として出力してください。
+
+          各機能の単体テスト：
+          □ フィールド計算の正確性
+          □ リンクの参照整合性
+          □ ワークフローの動作
+          □ ボタンアクションの実行
+          □ 権限による制御
+          "
+
+          # T2: 統合テスト
+          claude -p "
+          あなたはLark Baseの専門家です。統合テスト結果を integration_test_results.yaml として出力してください。
+
+          統合テストの実施：
+          □ エンドツーエンドのプロセステスト
+          □ データフローの確認
+          □ 通知・アラートの動作
+          □ ダッシュボードの更新
+          □ モバイル表示の確認
+          "
+
+          # T3: パフォーマンステスト
+          claude -p "
+          あなたはLark Baseの専門家です。パフォーマンステスト結果を performance_test_results.yaml として出力してください。
+
+          パフォーマンステスト：
+          □ 大量データでの表示速度
+          □ 複雑な数式の計算時間
+          □ ワークフローの処理速度
+          □ 同時アクセス時の安定性
+          目標: 10000件で3秒以内
+          "
+        working-directory: ${{ env.WORKTREE_PATH }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_MODEL: ${{ github.event.inputs.claude_model }}
+
+      # =================================================================
+      # C10: デプロイ・移行 (OperationalReady トラックのみ実行)
+      # =================================================================
+      - name: 'C10: Deployment'
+        if: contains(matrix.track.commands, 'C10')
+        run: |
+          # T1: データ移行
+          claude -p "
+          あなたはLark Baseの専門家です。データ移行ログを migration_log.yaml として出力してください。
+
+          既存データの移行：
+          1. データクレンジング
+          2. マスターデータのインポート
+          3. トランザクションデータの移行
+          4. データ整合性の確認
+          5. 移行ログの記録
+          "
+
+          # T2: ユーザー設定
+          claude -p "
+          あなたはLark Baseの専門家です。ユーザー設定完了報告を user_setup_complete.yaml として出力してください。
+
+          ユーザー設定：
+          1. ユーザーアカウントの作成
+          2. 権限グループへの割り当て
+          3. 初期パスワードの設定
+          4. 通知設定の構成
+          5. トレーニング資料の配布
+          "
+
+          # T3: 本番稼働
+          claude -p "
+          あなたはLark Baseの専門家です。本番稼働チェックリストを go_live_checklist.yaml として出力してください。
+
+          本番稼働：
+          1. 最終動作確認
+          2. バックアップ設定
+          3. 監視アラート設定
+          4. ユーザーへの通知
+          5. サポート体制の確立
+          "
+        working-directory: ${{ env.WORKTREE_PATH }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_MODEL: ${{ github.event.inputs.claude_model }}
+
+      - name: Commit and Push Generated Files
+        run: |
+          cd ${{ env.WORKTREE_PATH }}
+          git add .
+          if ! git diff --staged --quiet; then
+            git commit -m "feat: Auto-generate design files for ${{ matrix.track.name }}"
+            git push origin ${{ env.WORKTREE_BRANCH }}
+          else
+            echo "No changes to commit."
+          fi
+        
+      - name: Upload Artifacts for ${{ matrix.track.name }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: design-artifacts-${{ matrix.track.name }}
+          path: ${{ env.WORKTREE_PATH }}
+
+      - name: Cleanup Worktree
+        if: always()
+        run: |
+          git worktree remove ${{ env.WORKTREE_PATH }} --force || true
+          git branch -d ${{ env.WORKTREE_BRANCH }} || true
