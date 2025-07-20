@@ -50,7 +50,7 @@ jobs:
       # =================================================================
       - name: 'C1: System Analysis & Design'
         if: contains(matrix.track.commands, 'C1')
-        uses: anthropics/claude-code-base-action@beta
+        uses: anthropics/claude-code-action@beta
         with:
           prompt: |
             あなたはLark Baseの専門家です。以下の要件定義とデータ構造設計を行ってください。
@@ -75,7 +75,7 @@ jobs:
       # =================================================================
       - name: 'C2: Field Implementation'
         if: contains(matrix.track.commands, 'C2')
-        uses: anthropics/claude-code-base-action@beta
+        uses: anthropics/claude-code-action@beta
         with:
           prompt: |
             Lark Baseのフィールド設計を行います。
@@ -105,7 +105,7 @@ jobs:
       # =================================================================
       - name: 'C3: Relation Setup'
         if: contains(matrix.track.commands, 'C3')
-        uses: anthropics/claude-code-base-action@beta
+        uses: anthropics/claude-code-action@beta
         with:
           prompt: |
             テーブル間の双方向リンクを設定します。
@@ -134,7 +134,7 @@ jobs:
       # =================================================================
       - name: 'C4: Workflow Automation'
         if: contains(matrix.track.commands, 'C4')
-        uses: anthropics/claude-code-base-action@beta
+        uses: anthropics/claude-code-action@beta
         with:
           prompt: |
             自動化ワークフローを構築します。
@@ -159,7 +159,7 @@ jobs:
       # =================================================================
       - name: 'C5: Button Implementation'
         if: contains(matrix.track.commands, 'C5')
-        uses: anthropics/claude-code-base-action@beta
+        uses: anthropics/claude-code-action@beta
         with:
           prompt: |
             アクションボタンを設定します。
@@ -184,7 +184,7 @@ jobs:
       # =================================================================
       - name: 'C6: View Creation'
         if: contains(matrix.track.commands, 'C6')
-        uses: anthropics/claude-code-base-action@beta
+        uses: anthropics/claude-code-action@beta
         with:
           prompt: |
             各種ビューを作成・設定します。
@@ -209,7 +209,7 @@ jobs:
       # =================================================================
       - name: 'C7: Dashboard Creation'
         if: contains(matrix.track.commands, 'C7')
-        uses: anthropics/claude-code-base-action@beta
+        uses: anthropics/claude-code-action@beta
         with:
           prompt: |
             分析ダッシュボードを構築します。
@@ -234,7 +234,7 @@ jobs:
       # =================================================================
       - name: 'C8: Permission Setup'
         if: contains(matrix.track.commands, 'C8')
-        uses: anthropics/claude-code-base-action@beta
+        uses: anthropics/claude-code-action@beta
         with:
           prompt: |
             階層的な権限を設定します。
@@ -259,7 +259,7 @@ jobs:
       # =================================================================
       - name: 'C9: Testing & Validation'
         if: contains(matrix.track.commands, 'C9')
-        uses: anthropics/claude-code-base-action@beta
+        uses: anthropics/claude-code-action@beta
         with:
           prompt: |
             システムの動作確認と検証を行います。
@@ -284,7 +284,7 @@ jobs:
       # =================================================================
       - name: 'C10: Deployment'
         if: contains(matrix.track.commands, 'C10')
-        uses: anthropics/claude-code-base-action@beta
+        uses: anthropics/claude-code-action@beta
         with:
           prompt: |
             本番環境への展開を行います。

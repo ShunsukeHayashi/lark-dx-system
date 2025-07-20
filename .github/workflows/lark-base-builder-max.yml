@@ -55,7 +55,7 @@ jobs:
       # =================================================================
       - name: 'C1: System Analysis & Design'
         if: contains(matrix.track.commands, 'C1')
-        uses: anthropics/claude-code-base-action@beta
+        uses: anthropics/claude-code-action@beta
         with:
           prompt: |
             あなたはLark Baseの専門家です。以下の要件定義とデータ構造設計を行ってください。
@@ -74,15 +74,15 @@ jobs:
           model: ${{ github.event.inputs.claude_model }}
           allowed_tools: "Write,View"
           # MAX Subscriptionまたは従量課金APIを選択
-          anthropic_api_key: ${{ github.event.inputs.use_max_subscription != 'true' && secrets.ANTHROPIC_API_KEY || '' }}
-          claude_code_oauth_token: ${{ github.event.inputs.use_max_subscription == 'true' && secrets.CLAUDE_CODE_OAUTH_TOKEN || '' }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           
       # =================================================================
       # C2: フィールド設計・実装 (DataFoundation トラックのみ実行)
       # =================================================================
       - name: 'C2: Field Implementation'
         if: contains(matrix.track.commands, 'C2')
-        uses: anthropics/claude-code-base-action@beta
+        uses: anthropics/claude-code-action@beta
         with:
           prompt: |
             Lark Baseのフィールド設計を行います。
@@ -105,15 +105,15 @@ jobs:
             - 残日数計算、在庫予測、達成率、アラート判定など
           model: ${{ github.event.inputs.claude_model }}
           allowed_tools: "Write,View"
-          anthropic_api_key: ${{ github.event.inputs.use_max_subscription != 'true' && secrets.ANTHROPIC_API_KEY || '' }}
-          claude_code_oauth_token: ${{ github.event.inputs.use_max_subscription == 'true' && secrets.CLAUDE_CODE_OAUTH_TOKEN || '' }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
       # =================================================================
       # C3: リレーション構築 (DataFoundation トラックのみ実行)
       # =================================================================
       - name: 'C3: Relation Setup'
         if: contains(matrix.track.commands, 'C3')
-        uses: anthropics/claude-code-base-action@beta
+        uses: anthropics/claude-code-action@beta
         with:
           prompt: |
             テーブル間の双方向リンクを設定します。
@@ -135,15 +135,15 @@ jobs:
             - 商品単価、取引先情報、関連集計など
           model: ${{ github.event.inputs.claude_model }}
           allowed_tools: "Write,View"
-          anthropic_api_key: ${{ github.event.inputs.use_max_subscription != 'true' && secrets.ANTHROPIC_API_KEY || '' }}
-          claude_code_oauth_token: ${{ github.event.inputs.use_max_subscription == 'true' && secrets.CLAUDE_CODE_OAUTH_TOKEN || '' }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
       # =================================================================
       # C4: ワークフロー実装 (Automation トラックのみ実行)
       # =================================================================
       - name: 'C4: Workflow Automation'
         if: contains(matrix.track.commands, 'C4')
-        uses: anthropics/claude-code-base-action@beta
+        uses: anthropics/claude-code-action@beta
         with:
           prompt: |
             自動化ワークフローを構築します。
@@ -161,15 +161,15 @@ jobs:
             - 自動処理フロー（関連更新、ステータス変更、次工程開始）
           model: ${{ github.event.inputs.claude_model }}
           allowed_tools: "Write,View"
-          anthropic_api_key: ${{ github.event.inputs.use_max_subscription != 'true' && secrets.ANTHROPIC_API_KEY || '' }}
-          claude_code_oauth_token: ${{ github.event.inputs.use_max_subscription == 'true' && secrets.CLAUDE_CODE_OAUTH_TOKEN || '' }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
       # =================================================================
       # C5: ボタン実装 (Automation トラックのみ実行)
       # =================================================================
       - name: 'C5: Button Implementation'
         if: contains(matrix.track.commands, 'C5')
-        uses: anthropics/claude-code-base-action@beta
+        uses: anthropics/claude-code-action@beta
         with:
           prompt: |
             アクションボタンを設定します。
@@ -187,15 +187,15 @@ jobs:
             - 📊一括処理ボタン（対象特定、一括更新、結果集計）
           model: ${{ github.event.inputs.claude_model }}
           allowed_tools: "Write,View"
-          anthropic_api_key: ${{ github.event.inputs.use_max_subscription != 'true' && secrets.ANTHROPIC_API_KEY || '' }}
-          claude_code_oauth_token: ${{ github.event.inputs.use_max_subscription == 'true' && secrets.CLAUDE_CODE_OAUTH_TOKEN || '' }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
       # =================================================================
       # C6: ビュー作成 (Visualization トラックのみ実行)
       # =================================================================
       - name: 'C6: View Creation'
         if: contains(matrix.track.commands, 'C6')
-        uses: anthropics/claude-code-base-action@beta
+        uses: anthropics/claude-code-action@beta
         with:
           prompt: |
             各種ビューを作成・設定します。
@@ -213,15 +213,15 @@ jobs:
             - スケジュールカレンダー（日付表示、イベント内容、色分け）
           model: ${{ github.event.inputs.claude_model }}
           allowed_tools: "Write,View"
-          anthropic_api_key: ${{ github.event.inputs.use_max_subscription != 'true' && secrets.ANTHROPIC_API_KEY || '' }}
-          claude_code_oauth_token: ${{ github.event.inputs.use_max_subscription == 'true' && secrets.CLAUDE_CODE_OAUTH_TOKEN || '' }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
       # =================================================================
       # C7: ダッシュボード構築 (Visualization トラックのみ実行)
       # =================================================================
       - name: 'C7: Dashboard Creation'
         if: contains(matrix.track.commands, 'C7')
-        uses: anthropics/claude-code-base-action@beta
+        uses: anthropics/claude-code-action@beta
         with:
           prompt: |
             分析ダッシュボードを構築します。
@@ -239,15 +239,15 @@ jobs:
             - 要対応リスト（フィルター、表示項目、アクションボタン）
           model: ${{ github.event.inputs.claude_model }}
           allowed_tools: "Write,View"
-          anthropic_api_key: ${{ github.event.inputs.use_max_subscription != 'true' && secrets.ANTHROPIC_API_KEY || '' }}
-          claude_code_oauth_token: ${{ github.event.inputs.use_max_subscription == 'true' && secrets.CLAUDE_CODE_OAUTH_TOKEN || '' }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
       # =================================================================
       # C8: 権限設定 (OperationalReady トラックのみ実行)
       # =================================================================
       - name: 'C8: Permission Setup'
         if: contains(matrix.track.commands, 'C8')
-        uses: anthropics/claude-code-base-action@beta
+        uses: anthropics/claude-code-action@beta
         with:
           prompt: |
             階層的な権限を設定します。
@@ -265,15 +265,15 @@ jobs:
             - 原価・仕入値、個人情報、財務情報の表示・編集権限
           model: ${{ github.event.inputs.claude_model }}
           allowed_tools: "Write,View"
-          anthropic_api_key: ${{ github.event.inputs.use_max_subscription != 'true' && secrets.ANTHROPIC_API_KEY || '' }}
-          claude_code_oauth_token: ${{ github.event.inputs.use_max_subscription == 'true' && secrets.CLAUDE_CODE_OAUTH_TOKEN || '' }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
       # =================================================================
       # C9: テスト・検証 (OperationalReady トラックのみ実行)
       # =================================================================
       - name: 'C9: Testing & Validation'
         if: contains(matrix.track.commands, 'C9')
-        uses: anthropics/claude-code-base-action@beta
+        uses: anthropics/claude-code-action@beta
         with:
           prompt: |
             システムの動作確認と検証を行います。
@@ -291,15 +291,15 @@ jobs:
             - 大量データ表示、数式計算、同時アクセスなど
           model: ${{ github.event.inputs.claude_model }}
           allowed_tools: "Write,View"
-          anthropic_api_key: ${{ github.event.inputs.use_max_subscription != 'true' && secrets.ANTHROPIC_API_KEY || '' }}
-          claude_code_oauth_token: ${{ github.event.inputs.use_max_subscription == 'true' && secrets.CLAUDE_CODE_OAUTH_TOKEN || '' }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
       # =================================================================
       # C10: デプロイ・移行 (OperationalReady トラックのみ実行)
       # =================================================================
       - name: 'C10: Deployment'
         if: contains(matrix.track.commands, 'C10')
-        uses: anthropics/claude-code-base-action@beta
+        uses: anthropics/claude-code-action@beta
         with:
           prompt: |
             本番環境への展開を行います。
@@ -317,8 +317,8 @@ jobs:
             - 最終確認、バックアップ、監視設定など
           model: ${{ github.event.inputs.claude_model }}
           allowed_tools: "Write,View"
-          anthropic_api_key: ${{ github.event.inputs.use_max_subscription != 'true' && secrets.ANTHROPIC_API_KEY || '' }}
-          claude_code_oauth_token: ${{ github.event.inputs.use_max_subscription == 'true' && secrets.CLAUDE_CODE_OAUTH_TOKEN || '' }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
       # =================================================================
       # アーティファクト保存
