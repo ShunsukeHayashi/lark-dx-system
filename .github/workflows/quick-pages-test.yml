@@ -1,0 +1,117 @@
+name: 'Quick Pages Test'
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  create-sample-page:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Create sample page
+        run: |
+          mkdir -p docs
+          cat > docs/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Lark Base 設計書ポータル</title>
+              <style>
+                  body {
+                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                      max-width: 1200px;
+                      margin: 0 auto;
+                      padding: 20px;
+                      background: #f5f5f5;
+                  }
+                  .header {
+                      background: white;
+                      padding: 30px;
+                      border-radius: 10px;
+                      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                      text-align: center;
+                      margin-bottom: 30px;
+                  }
+                  h1 {
+                      color: #1a73e8;
+                      margin: 0;
+                  }
+                  .info-box {
+                      background: white;
+                      padding: 20px;
+                      border-radius: 10px;
+                      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                      margin-bottom: 20px;
+                  }
+                  .status {
+                      background: #4caf50;
+                      color: white;
+                      padding: 5px 15px;
+                      border-radius: 20px;
+                      display: inline-block;
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="header">
+                  <h1>🚀 Lark Base 設計書ポータル</h1>
+                  <p>Claude Chainで自動生成されるLark Base設計書</p>
+              </div>
+              
+              <div class="info-box">
+                  <h2>✅ GitHub Pages セットアップ完了！</h2>
+                  <p><span class="status">準備完了</span></p>
+                  <p>生成日時: $(date '+%Y年%m月%d日 %H:%M:%S')</p>
+              </div>
+              
+              <div class="info-box">
+                  <h2>📋 ワークフローの使い方</h2>
+                  <ol>
+                      <li>GitHubの<strong>Actions</strong>タブを開く</li>
+                      <li><strong>"Lark Base Builder with Claude Chain"</strong>を選択</li>
+                      <li><strong>"Run workflow"</strong>をクリック</li>
+                      <li>業界と業務領域を入力（例: 小売業、在庫管理）</li>
+                      <li>ワークフローを実行</li>
+                  </ol>
+                  <p>実行後、このページに設計書が追加されます。</p>
+              </div>
+              
+              <div class="info-box">
+                  <h2>🔗 利用可能なワークフロー</h2>
+                  <ul>
+                      <li><strong>Lark Base Builder with Claude Chain</strong> - 完全なC1-C10タスクチェーン実行</li>
+                      <li><strong>Lark Base Builder with Pages</strong> - シンプルなテンプレート生成</li>
+                  </ul>
+              </div>
+          </body>
+          </html>
+          EOF
+          
+      - name: Deploy to GitHub Pages
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'actions@github.com'
+          
+          git checkout -B gh-pages
+          cp -r docs/* .
+          rm -rf docs
+          
+          git add .
+          git commit -m "Initial GitHub Pages setup" || echo "No changes"
+          git push origin gh-pages --force
+          
+      - name: Output URL
+        run: |
+          echo "🎉 GitHub Pages の準備ができました！"
+          echo "📄 URL: https://shunsukeHayashi.github.io/lark-dx-system/"
+          echo ""
+          echo "数分後にアクセスできるようになります。"
