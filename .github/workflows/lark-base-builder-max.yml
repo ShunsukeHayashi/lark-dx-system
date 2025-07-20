@@ -29,6 +29,11 @@ on:
 jobs:
   build-lark-base-in-parallel:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
     strategy:
       fail-fast: false
       matrix:
@@ -57,7 +62,7 @@ jobs:
         if: contains(matrix.track.commands, 'C1')
         uses: anthropics/claude-code-action@beta
         with:
-          prompt: |
+          direct_prompt: |
             あなたはLark Baseの専門家です。以下の要件定義とデータ構造設計を行ってください。
             
             # 入力情報
@@ -71,7 +76,8 @@ jobs:
             
             ## T2: データ構造設計
             table_design.yamlというファイルを作成し、マスターテーブル、トランザクションテーブル、関連テーブルを設計してください。
-          model: ${{ github.event.inputs.claude_model }}
+          anthropic_model: ${{ github.event.inputs.claude_model }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           allowed_tools: "Write,View"
           # MAX Subscriptionまたは従量課金APIを選択
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -84,7 +90,7 @@ jobs:
         if: contains(matrix.track.commands, 'C2')
         uses: anthropics/claude-code-action@beta
         with:
-          prompt: |
+          direct_prompt: |
             Lark Baseのフィールド設計を行います。
             
             ## T0: 主キー設計
@@ -103,7 +109,8 @@ jobs:
             ## T3: 数式フィールド
             formula_fields.jsonを作成：
             - 残日数計算、在庫予測、達成率、アラート判定など
-          model: ${{ github.event.inputs.claude_model }}
+          anthropic_model: ${{ github.event.inputs.claude_model }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           allowed_tools: "Write,View"
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -115,7 +122,7 @@ jobs:
         if: contains(matrix.track.commands, 'C3')
         uses: anthropics/claude-code-action@beta
         with:
-          prompt: |
+          direct_prompt: |
             テーブル間の双方向リンクを設定します。
             
             ## T0: 可視性チェック
@@ -133,7 +140,8 @@ jobs:
             ## T3: ルックアップ作成
             lookup_fields.jsonを作成：
             - 商品単価、取引先情報、関連集計など
-          model: ${{ github.event.inputs.claude_model }}
+          anthropic_model: ${{ github.event.inputs.claude_model }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           allowed_tools: "Write,View"
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -145,7 +153,7 @@ jobs:
         if: contains(matrix.track.commands, 'C4')
         uses: anthropics/claude-code-action@beta
         with:
-          prompt: |
+          direct_prompt: |
             自動化ワークフローを構築します。
             
             ## T1: アラートワークフロー
@@ -159,7 +167,8 @@ jobs:
             ## T3: プロセスワークフロー
             process_workflow.jsonを作成：
             - 自動処理フロー（関連更新、ステータス変更、次工程開始）
-          model: ${{ github.event.inputs.claude_model }}
+          anthropic_model: ${{ github.event.inputs.claude_model }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           allowed_tools: "Write,View"
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -171,7 +180,7 @@ jobs:
         if: contains(matrix.track.commands, 'C5')
         uses: anthropics/claude-code-action@beta
         with:
-          prompt: |
+          direct_prompt: |
             アクションボタンを設定します。
             
             ## T1: クイック作成ボタン
@@ -185,7 +194,8 @@ jobs:
             ## T3: 一括処理ボタン
             batch_process_button.jsonを作成：
             - 📊一括処理ボタン（対象特定、一括更新、結果集計）
-          model: ${{ github.event.inputs.claude_model }}
+          anthropic_model: ${{ github.event.inputs.claude_model }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           allowed_tools: "Write,View"
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -197,7 +207,7 @@ jobs:
         if: contains(matrix.track.commands, 'C6')
         uses: anthropics/claude-code-action@beta
         with:
-          prompt: |
+          direct_prompt: |
             各種ビューを作成・設定します。
             
             ## T1: グリッドビュー
@@ -211,7 +221,8 @@ jobs:
             ## T3: カレンダービュー
             calendar_views.jsonを作成：
             - スケジュールカレンダー（日付表示、イベント内容、色分け）
-          model: ${{ github.event.inputs.claude_model }}
+          anthropic_model: ${{ github.event.inputs.claude_model }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           allowed_tools: "Write,View"
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -223,7 +234,7 @@ jobs:
         if: contains(matrix.track.commands, 'C7')
         uses: anthropics/claude-code-action@beta
         with:
-          prompt: |
+          direct_prompt: |
             分析ダッシュボードを構築します。
             
             ## T1: KPIカード
@@ -237,7 +248,8 @@ jobs:
             ## T3: アクションテーブル
             action_tables.jsonを作成：
             - 要対応リスト（フィルター、表示項目、アクションボタン）
-          model: ${{ github.event.inputs.claude_model }}
+          anthropic_model: ${{ github.event.inputs.claude_model }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           allowed_tools: "Write,View"
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -249,7 +261,7 @@ jobs:
         if: contains(matrix.track.commands, 'C8')
         uses: anthropics/claude-code-action@beta
         with:
-          prompt: |
+          direct_prompt: |
             階層的な権限を設定します。
             
             ## T1: ロール定義
@@ -263,7 +275,8 @@ jobs:
             ## T3: フィールド権限
             field_permissions.jsonを作成：
             - 原価・仕入値、個人情報、財務情報の表示・編集権限
-          model: ${{ github.event.inputs.claude_model }}
+          anthropic_model: ${{ github.event.inputs.claude_model }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           allowed_tools: "Write,View"
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -275,7 +288,7 @@ jobs:
         if: contains(matrix.track.commands, 'C9')
         uses: anthropics/claude-code-action@beta
         with:
-          prompt: |
+          direct_prompt: |
             システムの動作確認と検証を行います。
             
             ## T1: 単体テスト
@@ -289,7 +302,8 @@ jobs:
             ## T3: パフォーマンステスト
             performance_test_results.yamlを作成：
             - 大量データ表示、数式計算、同時アクセスなど
-          model: ${{ github.event.inputs.claude_model }}
+          anthropic_model: ${{ github.event.inputs.claude_model }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           allowed_tools: "Write,View"
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -301,7 +315,7 @@ jobs:
         if: contains(matrix.track.commands, 'C10')
         uses: anthropics/claude-code-action@beta
         with:
-          prompt: |
+          direct_prompt: |
             本番環境への展開を行います。
             
             ## T1: データ移行
@@ -315,7 +329,8 @@ jobs:
             ## T3: 本番稼働
             go_live_checklist.yamlを作成：
             - 最終確認、バックアップ、監視設定など
-          model: ${{ github.event.inputs.claude_model }}
+          anthropic_model: ${{ github.event.inputs.claude_model }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           allowed_tools: "Write,View"
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}

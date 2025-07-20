@@ -24,6 +24,11 @@ on:
 jobs:
   build-lark-base-in-parallel:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
     strategy:
       fail-fast: false
       matrix:
