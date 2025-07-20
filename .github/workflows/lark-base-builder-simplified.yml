@@ -1,0 +1,157 @@
+name: 'Lark Base Builder Simplified'
+
+on:
+  workflow_dispatch:
+    inputs:
+      industry:
+        description: '対象の業界 (例: 小売業, 製造業)'
+        required: true
+        default: 'サンプル業界'
+      business_domain:
+        description: '対象の業務領域 (例: 顧客管理, 在庫管理)'
+        required: true
+        default: 'サンプル業務'
+
+jobs:
+  generate-design:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Generate Design Documents
+        run: |
+          mkdir -p output
+          
+          # 要件定義書を生成
+          cat > output/requirement_spec.yaml << EOF
+          # Lark Base システム要件定義書
+          
+          application:
+            name: ${{ github.event.inputs.industry }}${{ github.event.inputs.business_domain }}統合管理システム
+            version: 1.0.0
+            created_date: $(date +%Y-%m-%d)
+            
+          business_info:
+            industry: ${{ github.event.inputs.industry }}
+            domain: ${{ github.event.inputs.business_domain }}
+            description: |
+              ${{ github.event.inputs.industry }}における${{ github.event.inputs.business_domain }}業務を
+              効率化するための統合管理システム
+              
+          scale:
+            expected_users: 50
+            initial_data_volume: 1000
+            growth_rate: 20% per year
+            
+          features:
+            - マスターデータ管理
+            - トランザクション処理
+            - ワークフロー自動化
+            - ダッシュボード分析
+            - 権限管理
+          EOF
+          
+          # テーブル設計書を生成
+          cat > output/table_design.yaml << EOF
+          # Lark Base テーブル設計書
+          
+          tables:
+            master_tables:
+              - table_name: 商品マスタ
+                table_id: tbl_product_master
+                description: 商品・サービスの基本情報を管理
+                fields_count: 15
+                
+              - table_name: 取引先マスタ
+                table_id: tbl_partner_master
+                description: 取引先企業の情報を管理
+                fields_count: 20
+                
+              - table_name: カテゴリマスタ
+                table_id: tbl_category_master
+                description: 分類・区分情報を管理
+                fields_count: 8
+                
+            transaction_tables:
+              - table_name: 注文管理
+                table_id: tbl_order_transaction
+                description: 注文・受注情報を記録
+                fields_count: 25
+                
+              - table_name: 作業履歴
+                table_id: tbl_work_history
+                description: 作業・処理の履歴を記録
+                fields_count: 18
+          EOF
+          
+          # フィールド設計書を生成
+          cat > output/field_design.json << EOF
+          {
+            "master_fields": {
+              "product_master": [
+                {"name": "商品ID", "type": "text", "primary": true},
+                {"name": "商品名", "type": "text", "required": true},
+                {"name": "カテゴリ", "type": "single_select"},
+                {"name": "単価", "type": "currency"},
+                {"name": "在庫数", "type": "number"},
+                {"name": "ステータス", "type": "single_select"}
+              ],
+              "partner_master": [
+                {"name": "取引先ID", "type": "text", "primary": true},
+                {"name": "会社名", "type": "text", "required": true},
+                {"name": "担当者", "type": "user"},
+                {"name": "連絡先", "type": "text"},
+                {"name": "取引開始日", "type": "date"}
+              ]
+            }
+          }
+          EOF
+          
+          # 実装ガイドを生成
+          cat > output/implementation_guide.md << EOF
+          # Lark Base 実装ガイド
+          
+          ## 対象システム
+          - 業界: ${{ github.event.inputs.industry }}
+          - 業務領域: ${{ github.event.inputs.business_domain }}
+          
+          ## 実装手順
+          
+          ### 1. Base（多維表格）の作成
+          1. Larkにログイン
+          2. 「多維表格」→「新規作成」
+          3. 名前: 「${{ github.event.inputs.industry }}${{ github.event.inputs.business_domain }}統合管理」
+          
+          ### 2. テーブル作成
+          1. 商品マスタ
+          2. 取引先マスタ
+          3. 注文管理テーブル
+          
+          ### 3. フィールド設定
+          各テーブルにfield_design.jsonの内容を参照してフィールドを作成
+          
+          ### 4. リレーション設定
+          - 注文管理 → 商品マスタ（多:1）
+          - 注文管理 → 取引先マスタ（多:1）
+          
+          ### 5. ビュー作成
+          - 管理者ビュー
+          - 担当者ビュー
+          - 分析ビュー
+          
+          ### 6. ダッシュボード設定
+          - KPIカード
+          - グラフ
+          - アクションテーブル
+          EOF
+          
+          echo "=== 生成完了 ==="
+          ls -la output/
+
+      - name: Upload Design Documents
+        uses: actions/upload-artifact@v4
+        with:
+          name: lark-base-design-${{ github.run_number }}
+          path: output/
+          retention-days: 30
