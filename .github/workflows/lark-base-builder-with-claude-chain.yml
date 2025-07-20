@@ -1,0 +1,836 @@
+name: 'Lark Base Builder with Claude Chain'
+
+on:
+  workflow_dispatch:
+    inputs:
+      industry:
+        description: '対象の業界 (例: 小売業, 製造業)'
+        required: true
+        default: 'サンプル業界'
+      business_domain:
+        description: '対象の業務領域 (例: 顧客管理, 在庫管理)'
+        required: true
+        default: 'サンプル業務'
+      claude_model:
+        description: 'Claudeモデル'
+        required: false
+        default: 'claude-3-haiku-20240307'
+        type: choice
+        options:
+          - claude-3-haiku-20240307
+          - claude-3-sonnet-20240229
+          - claude-3-opus-20240229
+      auth_method:
+        description: '認証方法'
+        required: false
+        default: 'api_key'
+        type: choice
+        options:
+          - api_key
+          - oauth_token
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  generate-with-claude-chain:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          pip install requests pyyaml jinja2
+
+      - name: Create directories
+        run: |
+          mkdir -p docs/projects
+          mkdir -p docs/assets/css
+          mkdir -p generated
+
+      - name: Generate Claude Chain Script
+        run: |
+          cat > claude_chain_generator.py << 'EOF'
+          import os
+          import json
+          import requests
+          import yaml
+          import time
+          from pathlib import Path
+          from datetime import datetime
+          
+          # Configuration
+          auth_method = os.environ.get('AUTH_METHOD', 'api_key')
+          api_key = os.environ.get('ANTHROPIC_API_KEY')
+          oauth_token = os.environ.get('CLAUDE_CODE_OAUTH_TOKEN')
+          model = os.environ.get('CLAUDE_MODEL', 'claude-3-haiku-20240307')
+          industry = os.environ.get('INDUSTRY')
+          business_domain = os.environ.get('BUSINESS_DOMAIN')
+          
+          # Setup headers based on auth method
+          headers = {
+              'Content-Type': 'application/json',
+              'anthropic-version': '2023-06-01'
+          }
+          
+          if auth_method == 'oauth_token' and oauth_token:
+              headers['Authorization'] = f'Bearer {oauth_token}'
+          elif api_key:
+              headers['x-api-key'] = api_key
+          else:
+              raise ValueError("No authentication method configured")
+          
+          # Context accumulator for chain prompting
+          context = {
+              'industry': industry,
+              'business_domain': business_domain,
+              'generated_files': {},
+              'execution_log': []
+          }
+          
+          def call_claude(prompt, max_tokens=4000):
+              """Call Claude API with the given prompt"""
+              data = {
+                  'model': model,
+                  'messages': [{'role': 'user', 'content': prompt}],
+                  'max_tokens': max_tokens
+              }
+              
+              try:
+                  response = requests.post(
+                      'https://api.anthropic.com/v1/messages',
+                      headers=headers,
+                      json=data
+                  )
+                  
+                  if response.status_code == 200:
+                      result = response.json()
+                      return result['content'][0]['text']
+                  else:
+                      error_msg = f"Error: {response.status_code} - {response.text}"
+                      print(error_msg)
+                      context['execution_log'].append({'error': error_msg, 'timestamp': datetime.now().isoformat()})
+                      return None
+              except Exception as e:
+                  error_msg = f"Exception: {str(e)}"
+                  print(error_msg)
+                  context['execution_log'].append({'error': error_msg, 'timestamp': datetime.now().isoformat()})
+                  return None
+          
+          def save_output(filename, content):
+              """Save output to file and update context"""
+              Path('generated').mkdir(exist_ok=True)
+              with open(f'generated/{filename}', 'w', encoding='utf-8') as f:
+                  f.write(content)
+              context['generated_files'][filename] = content
+              log_entry = {
+                  'action': 'file_created',
+                  'filename': filename,
+                  'timestamp': datetime.now().isoformat()
+              }
+              context['execution_log'].append(log_entry)
+              print(f"✓ Generated: {filename}")
+          
+          def build_context_summary():
+              """Build a summary of the context for the next prompt"""
+              summary = f"""
+              # コンテキストサマリー
+              - 業界: {industry}
+              - 業務領域: {business_domain}
+              - 生成済みファイル: {', '.join(context['generated_files'].keys())}
+              """
+              return summary
+          
+          # ===== C1: System Analysis & Design =====
+          print("\n=== C1: System Analysis & Design ===")
+          
+          # T1: Requirement Definition
+          prompt_c1_t1 = f"""
+          あなたはLark Baseの専門家です。以下の要件定義を行ってください。
+          
+          # 入力情報
+          - 業界: {industry}
+          - 業務領域: {business_domain}
+          
+          以下の項目を具体的に定義し、YAML形式で出力してください：
+          - アプリケーション名: {industry}{business_domain}統合管理システム
+          - 主要業務: 業界と業務領域に応じた3つ以上の具体的な業務
+          - 利用者数: 50-200名（想定）
+          - 管理対象数: 初期1000件+年20%増加見込み
+          - 取引先数: 業界特性に応じた概算
+          - チャネル数: 業務特性に応じた概算
+          - 月間処理件数: 業務量に応じた概算
+          
+          出力形式: requirement_spec.yaml の内容として出力
+          """
+          
+          result = call_claude(prompt_c1_t1)
+          if result:
+              save_output('requirement_spec.yaml', result)
+              time.sleep(1)
+          
+          # T2: Data Structure Design
+          prompt_c1_t2 = f"""
+          {build_context_summary()}
+          
+          前のタスクで以下の要件定義を作成しました：
+          ```yaml
+          {context['generated_files'].get('requirement_spec.yaml', '')[:1000]}
+          ```
+          
+          この要件に基づいて、Lark Baseのテーブル構造を設計してください。
+          
+          以下のテーブル構造を設計してYAML形式で出力してください：
+          1. マスターテーブル（静的データ）
+             - {industry}に関連する商品/サービスマスタ
+             - 取引先マスタ
+             - カテゴリマスタ
+             - その他業界特有のマスタ
+          2. トランザクションテーブル（動的データ）
+             - {business_domain}に関連する注文/依頼テーブル
+             - 処理/作業テーブル
+             - 履歴テーブル
+          3. 関連テーブル
+             - 分析用テーブル
+             - 設定テーブル
+             
+          各テーブルには以下を含めてください：
+          - table_id: tbl_で始まる英語ID
+          - table_name: 日本語名
+          - description: 説明
+          - primary_key: 主キーフィールド名
+          - fields_count: フィールド数の概算
+             
+          出力形式: table_design.yaml の内容として出力
+          """
+          
+          result = call_claude(prompt_c1_t2)
+          if result:
+              save_output('table_design.yaml', result)
+              time.sleep(1)
+          
+          # ===== C2: Field Implementation =====
+          print("\n=== C2: Field Implementation ===")
+          
+          # T0: Primary Key Setup
+          prompt_c2_t0 = f"""
+          {build_context_summary()}
+          
+          前のタスクで作成したテーブル設計：
+          ```yaml
+          {context['generated_files'].get('table_design.yaml', '')[:1500]}
+          ```
+          
+          各テーブルの主キーフィールドを設計してください：
+          
+          1. マスターテーブルの主キー設定
+             - フィールド名: 各エンティティに応じた名前（例：商品ID、取引先コード）
+             - タイプ: テキスト（直接入力）
+             - 位置: 最左端
+             - 制約: 必須、ユニーク
+             - 形式例: "PRD-00001", "CUST-00001"
+             
+          2. トランザクションテーブルの主キー設定
+             - フィールド名: 各トランザクションに応じた名前（例：注文ID、作業ID）
+             - タイプ: 数式
+             - 数式パターン: CONCATENATE(TEXT(日付, "YYYY-MM-DD"), "_", 関連エンティティ, "_", LEFT(説明, 20))
+             - 位置: 最左端
+             - 表示例: "2024-01-15_ABC商事_定期メンテナンス実施"
+             
+          3. プレビュー設定
+             - 各リンクフィールドで表示する情報を3つまで選択
+             - 優先順位: ID > ステータス > 金額/数量
+             
+          出力形式: primary_key_design.json の内容として出力（JSON形式）
+          """
+          
+          result = call_claude(prompt_c2_t0)
+          if result:
+              save_output('primary_key_design.json', result)
+              time.sleep(1)
+          
+          # T1: Master Fields
+          prompt_c2_t1 = f"""
+          {build_context_summary()}
+          
+          テーブル設計と主キー設計に基づいて、マスターテーブルのフィールドを詳細設計してください。
+          
+          各マスターテーブルに以下のフィールドを作成：
+          - ID（テキスト/自動採番）: 主キー設計に従う
+          - 名称（テキスト）: エンティティ名
+          - カテゴリ（単一選択）: 
+            - {industry}に応じた選択肢を3-5個
+            - 色: 標準色パレット使用（1行目の色）
+          - ステータス（単一選択）:
+            - 有効: 🟢緑（1行目5番目）
+            - 無効: 🤍グレー（1行目11番目）
+          - 数値データ（数値/通貨）: 単価、在庫数など
+          - 日付（日付）: 登録日、更新日
+          - 担当者（ユーザー）: 単一選択
+          - 備考（テキスト）: 複数行
+          - {industry}固有フィールド: 業界特性に応じた追加フィールド
+          
+          出力形式: master_fields.json の内容として出力（JSON形式）
+          """
+          
+          result = call_claude(prompt_c2_t1)
+          if result:
+              save_output('master_fields.json', result)
+              time.sleep(1)
+          
+          # T2: Transaction Fields
+          prompt_c2_t2 = f"""
+          {build_context_summary()}
+          
+          トランザクションテーブルのフィールドを詳細設計してください。
+          
+          各トランザクションテーブルに以下のフィールドを作成：
+          - 処理番号（自動採番）: プレフィックス-YYYYMMDD-0001形式
+          - ステータス（単一選択）:
+            - 新規: 🔵青
+            - 処理中: 🟡黄
+            - 完了: 🟢緑
+            - キャンセル: 🤍グレー
+            - エラー: ❤️赤
+          - 優先度（単一選択）:
+            - 緊急: ❤️赤
+            - 高: 🟡黄
+            - 中: 🔵青
+            - 低: 🤍グレー
+          - 金額関連（通貨）: 金額、税額、合計
+          - 期日（日付）: 開始日、期限、完了日
+          - フラグ（チェックボックス）: 緊急フラグ、承認フラグ
+          - リンクフィールド: マスターテーブルへの参照
+          - {business_domain}固有フィールド: 業務特性に応じた追加フィールド
+          
+          出力形式: transaction_fields.json の内容として出力（JSON形式）
+          """
+          
+          result = call_claude(prompt_c2_t2)
+          if result:
+              save_output('transaction_fields.json', result)
+              time.sleep(1)
+          
+          # T3: Formula Fields
+          prompt_c2_t3 = f"""
+          {build_context_summary()}
+          
+          数式フィールドを設計してください。{industry}と{business_domain}の特性を考慮して適切な計算式を作成してください。
+          
+          以下の数式フィールドを作成：
+          1. 残日数計算:
+             IF(ステータス != "完了", 期限 - TODAY(), "完了済")
+          2. 在庫予測（商品系の場合）:
+             IF(在庫 / 日次平均 < 7, "🚨緊急発注",
+             IF(在庫 / 日次平均 < 14, "⚠️要確認", "✅正常"))
+          3. 達成率:
+             IF(目標 > 0, 実績 / 目標 * 100, 0)
+          4. アラート判定:
+             IF(残日数 < 0, "遅延",
+             IF(残日数 < 3, "期限間近", "正常"))
+          5. {industry}固有の計算式:
+             業界特性に応じた独自の計算式を3つ以上
+          
+          出力形式: formula_fields.json の内容として出力（JSON形式）
+          """
+          
+          result = call_claude(prompt_c2_t3)
+          if result:
+              save_output('formula_fields.json', result)
+              time.sleep(1)
+          
+          # ===== C3: Relation Setup =====
+          print("\n=== C3: Relation Setup ===")
+          
+          # T0: Visibility Check
+          prompt_c3_t0 = f"""
+          {build_context_summary()}
+          
+          リレーション設定後の可視性最適化設計を行ってください。
+          
+          1. 双方向リンクの表示確認
+             - 親テーブル側: 関連レコード数の表示
+             - 子テーブル側: 親レコードの主要情報表示
+          2. ルックアップフィールドの追加
+             - 取引先から: 最終取引日、累計金額
+             - 商品から: 在庫数、単価
+             - プロジェクトから: 進捗率、期限
+          3. リンクプレビューの最適化
+             - 表示フィールド数: 3
+             - 表示順序の調整
+          
+          出力形式: visibility_optimization.json の内容として出力（JSON形式）
+          """
+          
+          result = call_claude(prompt_c3_t0)
+          if result:
+              save_output('visibility_optimization.json', result)
+              time.sleep(1)
+          
+          # Continue with C3-T1, T2, T3...
+          # C4: Workflow Automation
+          # C5: Button Implementation
+          # C6: View Creation
+          # C7: Dashboard Creation
+          # C8: Permission Setup
+          # C9: Testing & Validation
+          # C10: Deployment
+          
+          # Save final context
+          context['completion_time'] = datetime.now().isoformat()
+          context['total_files_generated'] = len(context['generated_files'])
+          
+          with open('generated/execution_context.json', 'w', encoding='utf-8') as f:
+              json.dump({
+                  'project_id': f"{industry}-{business_domain}-{time.strftime('%Y%m%d%H%M%S')}",
+                  'industry': industry,
+                  'business_domain': business_domain,
+                  'model': model,
+                  'auth_method': auth_method,
+                  'generated_files': list(context['generated_files'].keys()),
+                  'execution_log': context['execution_log'],
+                  'completion_time': context['completion_time']
+              }, f, ensure_ascii=False, indent=2)
+          
+          print("\n✅ Chain prompting completed!")
+          print(f"Total files generated: {context['total_files_generated']}")
+          print(f"Generated files: {', '.join(context['generated_files'].keys())}")
+          EOF
+
+      - name: Execute Claude Chain Prompting
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          AUTH_METHOD: ${{ github.event.inputs.auth_method }}
+          CLAUDE_MODEL: ${{ github.event.inputs.claude_model }}
+          INDUSTRY: ${{ github.event.inputs.industry }}
+          BUSINESS_DOMAIN: ${{ github.event.inputs.business_domain }}
+        run: |
+          python claude_chain_generator.py
+
+      - name: Generate HTML Documentation
+        run: |
+          PROJECT_ID="${{ github.event.inputs.industry }}-${{ github.event.inputs.business_domain }}-$(date +%Y%m%d%H%M%S)"
+          PROJECT_DIR="docs/projects/${PROJECT_ID}"
+          mkdir -p ${PROJECT_DIR}
+          
+          # Copy generated files
+          cp generated/*.yaml ${PROJECT_DIR}/ 2>/dev/null || true
+          cp generated/*.json ${PROJECT_DIR}/ 2>/dev/null || true
+          
+          # Generate CSS
+          cat > docs/assets/css/style.css << 'EOF'
+          :root {
+            --primary-color: #1a73e8;
+            --secondary-color: #34a853;
+            --background-color: #f8f9fa;
+            --text-color: #202124;
+            --border-color: #dadce0;
+          }
+          
+          * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+          }
+          
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+          }
+          
+          .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+          }
+          
+          header {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px 0;
+            margin-bottom: 30px;
+          }
+          
+          h1 {
+            color: var(--primary-color);
+            font-size: 2.5em;
+            margin-bottom: 10px;
+          }
+          
+          .project-info {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+          }
+          
+          .section {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+          }
+          
+          .section h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+          }
+          
+          .download-section {
+            background: var(--secondary-color);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 30px 0;
+          }
+          
+          .download-btn {
+            display: inline-block;
+            background: white;
+            color: var(--secondary-color);
+            padding: 10px 30px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            margin: 5px;
+            transition: transform 0.2s;
+          }
+          
+          .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+          }
+          
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+          }
+          
+          th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+          }
+          
+          th {
+            background: var(--background-color);
+            font-weight: bold;
+          }
+          
+          code {
+            background: #f1f3f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+          }
+          
+          pre {
+            background: #f1f3f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 15px 0;
+          }
+          
+          .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+          }
+          
+          .status-completed {
+            background: #e6f4ea;
+            color: #137333;
+          }
+          
+          .status-in-progress {
+            background: #fef7e0;
+            color: #b05a00;
+          }
+          
+          .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin: 30px 0;
+          }
+          
+          .nav-btn {
+            padding: 10px 20px;
+            background: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+          }
+          
+          .nav-btn:hover {
+            background: #1557b0;
+          }
+          
+          .code-output {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+          }
+          
+          .file-list {
+            list-style: none;
+            padding: 0;
+          }
+          
+          .file-list li {
+            padding: 10px;
+            margin: 5px 0;
+            background: var(--background-color);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          }
+          
+          .file-icon {
+            margin-right: 10px;
+          }
+          EOF
+          
+          # Generate project HTML
+          cat > ${PROJECT_DIR}/index.html << EOF
+          <!DOCTYPE html>
+          <html lang="ja">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>${{ github.event.inputs.industry }}${{ github.event.inputs.business_domain }}統合管理システム - 設計書</title>
+              <link rel="stylesheet" href="../../assets/css/style.css">
+          </head>
+          <body>
+              <header>
+                  <div class="container">
+                      <h1>🏢 ${{ github.event.inputs.industry }}${{ github.event.inputs.business_domain }}統合管理システム</h1>
+                      <p>Lark Base 設計書・実装ガイド (Claude Chain Generated)</p>
+                  </div>
+              </header>
+              
+              <div class="container">
+                  <div class="project-info">
+                      <h2>📋 プロジェクト情報</h2>
+                      <table>
+                          <tr>
+                              <th>プロジェクトID</th>
+                              <td><code>${PROJECT_ID}</code></td>
+                          </tr>
+                          <tr>
+                              <th>業界</th>
+                              <td>${{ github.event.inputs.industry }}</td>
+                          </tr>
+                          <tr>
+                              <th>業務領域</th>
+                              <td>${{ github.event.inputs.business_domain }}</td>
+                          </tr>
+                          <tr>
+                              <th>生成日時</th>
+                              <td>$(date '+%Y年%m月%d日 %H:%M')</td>
+                          </tr>
+                          <tr>
+                              <th>Claudeモデル</th>
+                              <td>${{ github.event.inputs.claude_model }}</td>
+                          </tr>
+                          <tr>
+                              <th>ステータス</th>
+                              <td><span class="status-badge status-completed">生成完了</span></td>
+                          </tr>
+                      </table>
+                  </div>
+                  
+                  <div class="download-section">
+                      <h2>📥 生成ファイルダウンロード</h2>
+                      <p>Claude Chainにより生成された設計書をダウンロードできます</p>
+          EOF
+          
+          # Add download links for generated files
+          for file in generated/*.yaml generated/*.json; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              echo "            <a href=\"$filename\" class=\"download-btn\" download>$filename</a>" >> ${PROJECT_DIR}/index.html
+            fi
+          done
+          
+          cat >> ${PROJECT_DIR}/index.html << EOF
+                  </div>
+                  
+                  <div class="section">
+                      <h2>🎯 システム概要</h2>
+                      <p>${{ github.event.inputs.industry }}における${{ github.event.inputs.business_domain }}業務を効率化するための統合管理システムです。</p>
+                      
+                      <h3>Claude Chain実行内容</h3>
+                      <ul class="file-list">
+                          <li><span class="file-icon">📄</span> C1-T1: 要件定義 (requirement_spec.yaml)</li>
+                          <li><span class="file-icon">📄</span> C1-T2: テーブル設計 (table_design.yaml)</li>
+                          <li><span class="file-icon">📄</span> C2-T0: 主キー設計 (primary_key_design.json)</li>
+                          <li><span class="file-icon">📄</span> C2-T1: マスターフィールド設計 (master_fields.json)</li>
+                          <li><span class="file-icon">📄</span> C2-T2: トランザクションフィールド設計 (transaction_fields.json)</li>
+                          <li><span class="file-icon">📄</span> C2-T3: 数式フィールド設計 (formula_fields.json)</li>
+                          <li><span class="file-icon">📄</span> C3-T0: 可視性最適化設計 (visibility_optimization.json)</li>
+                      </ul>
+                  </div>
+                  
+                  <div class="section">
+                      <h2>🔗 実行コンテキスト</h2>
+                      <p>Claude Chain実行時のコンテキストと生成ログ</p>
+                      <div class="code-output">
+                          <pre id="execution-context"></pre>
+                      </div>
+                  </div>
+                  
+                  <div class="nav-buttons">
+                      <a href="../../index.html" class="nav-btn">← プロジェクト一覧へ</a>
+                  </div>
+              </div>
+              
+              <script>
+                  // Load and display execution context
+                  fetch('execution_context.json')
+                      .then(response => response.json())
+                      .then(data => {
+                          document.getElementById('execution-context').textContent = JSON.stringify(data, null, 2);
+                      })
+                      .catch(error => {
+                          document.getElementById('execution-context').textContent = 'Context file not found';
+                      });
+              </script>
+          </body>
+          </html>
+          EOF
+          
+          # Create index page
+          cat > docs/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="ja">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Lark Base 設計書ポータル</title>
+              <link rel="stylesheet" href="assets/css/style.css">
+          </head>
+          <body>
+              <header>
+                  <div class="container">
+                      <h1>🗂️ Lark Base 設計書ポータル</h1>
+                      <p>Claude Chainで生成されたプロジェクトの一覧</p>
+                  </div>
+              </header>
+              <div class="container">
+                  <div class="section">
+                      <h2>📋 プロジェクト一覧</h2>
+                      <div id="project-list">
+                          <p>プロジェクトディレクトリを確認しています...</p>
+                      </div>
+                  </div>
+                  
+                  <div class="section">
+                      <h2>🚀 新規プロジェクト作成</h2>
+                      <p>GitHub Actions の workflow_dispatch を使用して新しいプロジェクトを作成できます。</p>
+                      <ol>
+                          <li>GitHub リポジトリの Actions タブを開く</li>
+                          <li>"Lark Base Builder with Claude Chain" ワークフローを選択</li>
+                          <li>"Run workflow" をクリック</li>
+                          <li>業界と業務領域を入力</li>
+                          <li>認証方法を選択（API Key または OAuth Token）</li>
+                          <li>ワークフローを実行</li>
+                      </ol>
+                  </div>
+              </div>
+              
+              <script>
+                  // Simple project listing
+                  const projectList = document.getElementById('project-list');
+                  projectList.innerHTML = '<ul class="file-list">';
+                  
+                  // This would normally fetch from an API or directory listing
+                  // For now, just show the current project
+                  const currentProject = {
+                      id: '${{ github.event.inputs.industry }}-${{ github.event.inputs.business_domain }}',
+                      url: 'projects/${PROJECT_ID}/',
+                      date: new Date().toLocaleDateString('ja-JP')
+                  };
+                  
+                  projectList.innerHTML += \`
+                      <li>
+                          <span class="file-icon">📁</span>
+                          <a href="\${currentProject.url}">\${currentProject.id}</a>
+                          <span>\${currentProject.date}</span>
+                      </li>
+                  \`;
+                  
+                  projectList.innerHTML += '</ul>';
+              </script>
+          </body>
+          </html>
+          EOF
+
+      - name: Commit to GitHub Pages branch
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'actions@github.com'
+          
+          # Create or checkout gh-pages branch
+          git checkout -B gh-pages || git checkout gh-pages
+          
+          # Copy docs content
+          cp -r docs/* .
+          
+          git add .
+          git commit -m "Add Claude Chain generated docs for ${{ github.event.inputs.industry }}-${{ github.event.inputs.business_domain }}" || echo "No changes to commit"
+          git push origin gh-pages --force
+
+      - name: Enable GitHub Pages
+        run: |
+          # Enable GitHub Pages via API
+          curl -X PUT \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/pages \
+            -d '{"source":{"branch":"gh-pages","path":"/"}}' || echo "Pages might already be enabled"
+
+      - name: Output Pages URL
+        run: |
+          echo "📄 設計書が公開されました！"
+          echo "URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/projects/"
+          echo ""
+          echo "プロジェクト一覧: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+          echo ""
+          echo "生成されたファイル:"
+          ls -la generated/
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lark-base-claude-chain-${{ github.run_number }}
+          path: |
+            generated/
+            docs/
+          retention-days: 30

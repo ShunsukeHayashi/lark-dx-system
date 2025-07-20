@@ -1,0 +1,650 @@
+name: 'Lark Base Builder with GitHub Pages'
+
+on:
+  workflow_dispatch:
+    inputs:
+      industry:
+        description: '対象の業界 (例: 小売業, 製造業)'
+        required: true
+        default: 'サンプル業界'
+      business_domain:
+        description: '対象の業務領域 (例: 顧客管理, 在庫管理)'
+        required: true
+        default: 'サンプル業務'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  generate-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Create docs directory
+        run: |
+          mkdir -p docs
+          mkdir -p docs/projects
+          mkdir -p docs/assets/css
+          
+      - name: Generate Design Documents and HTML
+        run: |
+          PROJECT_ID="${{ github.event.inputs.industry }}-${{ github.event.inputs.business_domain }}-$(date +%Y%m%d%H%M%S)"
+          PROJECT_DIR="docs/projects/${PROJECT_ID}"
+          mkdir -p ${PROJECT_DIR}
+          
+          # CSSファイルを作成
+          cat > docs/assets/css/style.css << 'EOF'
+          :root {
+            --primary-color: #1a73e8;
+            --secondary-color: #34a853;
+            --background-color: #f8f9fa;
+            --text-color: #202124;
+            --border-color: #dadce0;
+          }
+          
+          * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+          }
+          
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+          }
+          
+          .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+          }
+          
+          header {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px 0;
+            margin-bottom: 30px;
+          }
+          
+          h1 {
+            color: var(--primary-color);
+            font-size: 2.5em;
+            margin-bottom: 10px;
+          }
+          
+          .project-info {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+          }
+          
+          .section {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+          }
+          
+          .section h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+          }
+          
+          .download-section {
+            background: var(--secondary-color);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 30px 0;
+          }
+          
+          .download-btn {
+            display: inline-block;
+            background: white;
+            color: var(--secondary-color);
+            padding: 10px 30px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            margin: 5px;
+            transition: transform 0.2s;
+          }
+          
+          .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+          }
+          
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+          }
+          
+          th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+          }
+          
+          th {
+            background: var(--background-color);
+            font-weight: bold;
+          }
+          
+          code {
+            background: #f1f3f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+          }
+          
+          pre {
+            background: #f1f3f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 15px 0;
+          }
+          
+          .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+          }
+          
+          .status-completed {
+            background: #e6f4ea;
+            color: #137333;
+          }
+          
+          .status-in-progress {
+            background: #fef7e0;
+            color: #b05a00;
+          }
+          
+          .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin: 30px 0;
+          }
+          
+          .nav-btn {
+            padding: 10px 20px;
+            background: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+          }
+          
+          .nav-btn:hover {
+            background: #1557b0;
+          }
+          EOF
+          
+          # 要件定義書を生成
+          cat > ${PROJECT_DIR}/requirement_spec.yaml << EOF
+          # Lark Base システム要件定義書
+          
+          application:
+            name: ${{ github.event.inputs.industry }}${{ github.event.inputs.business_domain }}統合管理システム
+            version: 1.0.0
+            created_date: $(date +%Y-%m-%d)
+            project_id: ${PROJECT_ID}
+            
+          business_info:
+            industry: ${{ github.event.inputs.industry }}
+            domain: ${{ github.event.inputs.business_domain }}
+            description: |
+              ${{ github.event.inputs.industry }}における${{ github.event.inputs.business_domain }}業務を
+              効率化するための統合管理システム
+              
+          scale:
+            expected_users: 50
+            initial_data_volume: 1000
+            growth_rate: 20% per year
+            
+          features:
+            - マスターデータ管理
+            - トランザクション処理
+            - ワークフロー自動化
+            - ダッシュボード分析
+            - 権限管理
+            
+          implementation_schedule:
+            phase1:
+              name: データ基盤構築
+              duration: 2週間
+              tasks:
+                - テーブル設計
+                - フィールド実装
+                - リレーション構築
+            phase2:
+              name: 自動化実装
+              duration: 1週間
+              tasks:
+                - ワークフロー設定
+                - ボタン実装
+            phase3:
+              name: 可視化・最適化
+              duration: 1週間
+              tasks:
+                - ビュー作成
+                - ダッシュボード構築
+                - 権限設定
+          EOF
+          
+          # テーブル設計書を生成
+          cat > ${PROJECT_DIR}/table_design.yaml << EOF
+          # Lark Base テーブル設計書
+          
+          project_info:
+            id: ${PROJECT_ID}
+            generated_date: $(date +%Y-%m-%d)
+            
+          tables:
+            master_tables:
+              - table_name: 商品マスタ
+                table_id: tbl_product_master
+                description: 商品・サービスの基本情報を管理
+                fields_count: 15
+                primary_key: 商品ID
+                
+              - table_name: 取引先マスタ
+                table_id: tbl_partner_master
+                description: 取引先企業の情報を管理
+                fields_count: 20
+                primary_key: 取引先ID
+                
+              - table_name: カテゴリマスタ
+                table_id: tbl_category_master
+                description: 分類・区分情報を管理
+                fields_count: 8
+                primary_key: カテゴリID
+                
+            transaction_tables:
+              - table_name: 注文管理
+                table_id: tbl_order_transaction
+                description: 注文・受注情報を記録
+                fields_count: 25
+                primary_key: 注文ID
+                
+              - table_name: 作業履歴
+                table_id: tbl_work_history
+                description: 作業・処理の履歴を記録
+                fields_count: 18
+                primary_key: 履歴ID
+                
+          relationships:
+            - from: 注文管理
+              to: 商品マスタ
+              type: many-to-one
+              field: 商品ID
+              
+            - from: 注文管理
+              to: 取引先マスタ
+              type: many-to-one
+              field: 取引先ID
+          EOF
+          
+          # HTMLページを生成
+          cat > ${PROJECT_DIR}/index.html << EOF
+          <!DOCTYPE html>
+          <html lang="ja">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>${{ github.event.inputs.industry }}${{ github.event.inputs.business_domain }}統合管理システム - 設計書</title>
+              <link rel="stylesheet" href="../../assets/css/style.css">
+          </head>
+          <body>
+              <header>
+                  <div class="container">
+                      <h1>🏢 ${{ github.event.inputs.industry }}${{ github.event.inputs.business_domain }}統合管理システム</h1>
+                      <p>Lark Base 設計書・実装ガイド</p>
+                  </div>
+              </header>
+              
+              <div class="container">
+                  <div class="project-info">
+                      <h2>📋 プロジェクト情報</h2>
+                      <table>
+                          <tr>
+                              <th>プロジェクトID</th>
+                              <td><code>${PROJECT_ID}</code></td>
+                          </tr>
+                          <tr>
+                              <th>業界</th>
+                              <td>${{ github.event.inputs.industry }}</td>
+                          </tr>
+                          <tr>
+                              <th>業務領域</th>
+                              <td>${{ github.event.inputs.business_domain }}</td>
+                          </tr>
+                          <tr>
+                              <th>生成日時</th>
+                              <td>$(date '+%Y年%m月%d日 %H:%M')</td>
+                          </tr>
+                          <tr>
+                              <th>ステータス</th>
+                              <td><span class="status-badge status-completed">生成完了</span></td>
+                          </tr>
+                      </table>
+                  </div>
+                  
+                  <div class="download-section">
+                      <h2>📥 設計書ダウンロード</h2>
+                      <p>生成された設計書をダウンロードできます</p>
+                      <a href="requirement_spec.yaml" class="download-btn" download>要件定義書</a>
+                      <a href="table_design.yaml" class="download-btn" download>テーブル設計書</a>
+                      <a href="implementation_guide.html" class="download-btn">実装ガイド</a>
+                  </div>
+                  
+                  <div class="section">
+                      <h2>🎯 システム概要</h2>
+                      <p>${{ github.event.inputs.industry }}における${{ github.event.inputs.business_domain }}業務を効率化するための統合管理システムです。</p>
+                      
+                      <h3>主な機能</h3>
+                      <ul>
+                          <li>✅ マスターデータ管理（商品、取引先、カテゴリ）</li>
+                          <li>✅ トランザクション処理（注文、作業履歴）</li>
+                          <li>✅ ワークフロー自動化（承認、通知、自動処理）</li>
+                          <li>✅ ダッシュボード分析（KPI、グラフ、レポート）</li>
+                          <li>✅ 権限管理（5段階の権限レベル）</li>
+                      </ul>
+                  </div>
+                  
+                  <div class="section">
+                      <h2>📊 テーブル構成</h2>
+                      <h3>マスターテーブル</h3>
+                      <table>
+                          <thead>
+                              <tr>
+                                  <th>テーブル名</th>
+                                  <th>ID</th>
+                                  <th>説明</th>
+                                  <th>フィールド数</th>
+                              </tr>
+                          </thead>
+                          <tbody>
+                              <tr>
+                                  <td>商品マスタ</td>
+                                  <td><code>tbl_product_master</code></td>
+                                  <td>商品・サービスの基本情報を管理</td>
+                                  <td>15</td>
+                              </tr>
+                              <tr>
+                                  <td>取引先マスタ</td>
+                                  <td><code>tbl_partner_master</code></td>
+                                  <td>取引先企業の情報を管理</td>
+                                  <td>20</td>
+                              </tr>
+                              <tr>
+                                  <td>カテゴリマスタ</td>
+                                  <td><code>tbl_category_master</code></td>
+                                  <td>分類・区分情報を管理</td>
+                                  <td>8</td>
+                              </tr>
+                          </tbody>
+                      </table>
+                      
+                      <h3>トランザクションテーブル</h3>
+                      <table>
+                          <thead>
+                              <tr>
+                                  <th>テーブル名</th>
+                                  <th>ID</th>
+                                  <th>説明</th>
+                                  <th>フィールド数</th>
+                              </tr>
+                          </thead>
+                          <tbody>
+                              <tr>
+                                  <td>注文管理</td>
+                                  <td><code>tbl_order_transaction</code></td>
+                                  <td>注文・受注情報を記録</td>
+                                  <td>25</td>
+                              </tr>
+                              <tr>
+                                  <td>作業履歴</td>
+                                  <td><code>tbl_work_history</code></td>
+                                  <td>作業・処理の履歴を記録</td>
+                                  <td>18</td>
+                              </tr>
+                          </tbody>
+                      </table>
+                  </div>
+                  
+                  <div class="section">
+                      <h2>📅 実装スケジュール</h2>
+                      <table>
+                          <thead>
+                              <tr>
+                                  <th>フェーズ</th>
+                                  <th>期間</th>
+                                  <th>主なタスク</th>
+                                  <th>ステータス</th>
+                              </tr>
+                          </thead>
+                          <tbody>
+                              <tr>
+                                  <td>Phase 1: データ基盤構築</td>
+                                  <td>2週間</td>
+                                  <td>テーブル設計、フィールド実装、リレーション構築</td>
+                                  <td><span class="status-badge status-in-progress">準備中</span></td>
+                              </tr>
+                              <tr>
+                                  <td>Phase 2: 自動化実装</td>
+                                  <td>1週間</td>
+                                  <td>ワークフロー設定、ボタン実装</td>
+                                  <td><span class="status-badge">未着手</span></td>
+                              </tr>
+                              <tr>
+                                  <td>Phase 3: 可視化・最適化</td>
+                                  <td>1週間</td>
+                                  <td>ビュー作成、ダッシュボード構築、権限設定</td>
+                                  <td><span class="status-badge">未着手</span></td>
+                              </tr>
+                          </tbody>
+                      </table>
+                  </div>
+                  
+                  <div class="nav-buttons">
+                      <a href="../../index.html" class="nav-btn">← プロジェクト一覧へ</a>
+                      <a href="implementation_guide.html" class="nav-btn">実装ガイドへ →</a>
+                  </div>
+              </div>
+          </body>
+          </html>
+          EOF
+          
+          # 実装ガイドHTMLを生成
+          cat > ${PROJECT_DIR}/implementation_guide.html << EOF
+          <!DOCTYPE html>
+          <html lang="ja">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>実装ガイド - ${{ github.event.inputs.industry }}${{ github.event.inputs.business_domain }}</title>
+              <link rel="stylesheet" href="../../assets/css/style.css">
+          </head>
+          <body>
+              <header>
+                  <div class="container">
+                      <h1>📚 Lark Base 実装ガイド</h1>
+                      <p>${{ github.event.inputs.industry }}${{ github.event.inputs.business_domain }}統合管理システム</p>
+                  </div>
+              </header>
+              
+              <div class="container">
+                  <div class="section">
+                      <h2>🚀 実装手順</h2>
+                      
+                      <h3>Step 1: Base（多維表格）の作成</h3>
+                      <ol>
+                          <li>Larkにログイン</li>
+                          <li>「多維表格」→「新規作成」をクリック</li>
+                          <li>名前を入力: <code>${{ github.event.inputs.industry }}${{ github.event.inputs.business_domain }}統合管理</code></li>
+                      </ol>
+                      
+                      <h3>Step 2: テーブル作成</h3>
+                      <p>以下の順序でテーブルを作成します：</p>
+                      <pre>
+  1. 商品マスタ (tbl_product_master)
+  2. 取引先マスタ (tbl_partner_master)
+  3. カテゴリマスタ (tbl_category_master)
+  4. 注文管理 (tbl_order_transaction)
+  5. 作業履歴 (tbl_work_history)</pre>
+                      
+                      <h3>Step 3: フィールド設定</h3>
+                      <p>各テーブルに以下のフィールドを作成：</p>
+                      
+                      <h4>商品マスタの例</h4>
+                      <table>
+                          <thead>
+                              <tr>
+                                  <th>フィールド名</th>
+                                  <th>タイプ</th>
+                                  <th>設定</th>
+                              </tr>
+                          </thead>
+                          <tbody>
+                              <tr>
+                                  <td>商品ID</td>
+                                  <td>テキスト</td>
+                                  <td>主キー、必須、ユニーク</td>
+                              </tr>
+                              <tr>
+                                  <td>商品名</td>
+                                  <td>テキスト</td>
+                                  <td>必須</td>
+                              </tr>
+                              <tr>
+                                  <td>カテゴリ</td>
+                                  <td>単一選択</td>
+                                  <td>カテゴリマスタを参照</td>
+                              </tr>
+                              <tr>
+                                  <td>単価</td>
+                                  <td>通貨</td>
+                                  <td>JPY</td>
+                              </tr>
+                              <tr>
+                                  <td>在庫数</td>
+                                  <td>数値</td>
+                                  <td>デフォルト: 0</td>
+                              </tr>
+                          </tbody>
+                      </table>
+                  </div>
+                  
+                  <div class="nav-buttons">
+                      <a href="index.html" class="nav-btn">← 設計書トップへ</a>
+                      <a href="../../index.html" class="nav-btn">プロジェクト一覧へ →</a>
+                  </div>
+              </div>
+          </body>
+          </html>
+          EOF
+          
+          # プロジェクト一覧ページを更新
+          if [ ! -f docs/index.html ]; then
+              cat > docs/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="ja">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Lark Base 設計書ポータル</title>
+              <link rel="stylesheet" href="assets/css/style.css">
+          </head>
+          <body>
+              <header>
+                  <div class="container">
+                      <h1>🗂️ Lark Base 設計書ポータル</h1>
+                      <p>生成されたプロジェクトの一覧</p>
+                  </div>
+              </header>
+              <div class="container">
+                  <div class="section">
+                      <h2>📋 プロジェクト一覧</h2>
+                      <div id="project-list">
+                          <!-- プロジェクトリストはJavaScriptで動的に追加 -->
+                      </div>
+                  </div>
+              </div>
+              <script>
+                  // プロジェクト一覧を動的に読み込む（簡易版）
+                  const projectList = document.getElementById('project-list');
+                  // 実際の実装では、プロジェクトメタデータをJSONで管理
+              </script>
+          </body>
+          </html>
+          EOF
+          fi
+          
+          # プロジェクトメタデータを追加
+          cat > ${PROJECT_DIR}/metadata.json << EOF
+          {
+            "id": "${PROJECT_ID}",
+            "name": "${{ github.event.inputs.industry }}${{ github.event.inputs.business_domain }}統合管理システム",
+            "industry": "${{ github.event.inputs.industry }}",
+            "domain": "${{ github.event.inputs.business_domain }}",
+            "created": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "status": "completed"
+          }
+          EOF
+          
+          echo "プロジェクトID: ${PROJECT_ID}"
+          echo "生成完了！"
+
+      - name: Commit to GitHub Pages branch
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'actions@github.com'
+          
+          # gh-pagesブランチが存在しない場合は作成
+          git checkout -B gh-pages || git checkout gh-pages
+          
+          # docsディレクトリの内容をコピー
+          cp -r docs/* .
+          
+          git add .
+          git commit -m "Add design documents for ${{ github.event.inputs.industry }}-${{ github.event.inputs.business_domain }}" || echo "No changes to commit"
+          git push origin gh-pages --force
+
+      - name: Enable GitHub Pages
+        run: |
+          # GitHub Pages設定（APIで有効化）
+          curl -X PUT \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/pages \
+            -d '{"source":{"branch":"gh-pages","path":"/"}}'
+
+      - name: Output Pages URL
+        run: |
+          echo "📄 設計書が公開されました！"
+          echo "URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/projects/"
+          echo ""
+          echo "プロジェクト一覧: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
