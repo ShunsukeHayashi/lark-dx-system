@@ -1,0 +1,87 @@
+name: 'Lark Base Builder with Claude CLI'
+
+on:
+  workflow_dispatch:
+    inputs:
+      industry:
+        description: '対象の業界 (例: 小売業, 製造業)'
+        required: true
+        default: 'サンプル業界'
+      business_domain:
+        description: '対象の業務領域 (例: 顧客管理, 在庫管理)'
+        required: true
+        default: 'サンプル業務'
+      claude_model:
+        description: 'Claudeモデル'
+        required: false
+        default: 'claude-3-haiku-20240307'
+        type: choice
+        options:
+          - claude-3-haiku-20240307
+          - claude-3-sonnet-20240229
+          - claude-3-opus-20240229
+
+jobs:
+  build-lark-base:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Claude CLI
+        run: |
+          npm install -g @anthropic-ai/claude-cli
+
+      - name: Generate Lark Base Design
+        env:
+          CLAUDE_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          # C1: システム構造分析・設計
+          echo "=== C1: System Analysis & Design ==="
+          claude_output=$(claude chat --model ${{ github.event.inputs.claude_model }} --message "
+          あなたはLark Baseの専門家です。以下の要件定義とデータ構造設計を行ってください。
+          
+          # 入力情報
+          - 業界: ${{ github.event.inputs.industry }}
+          - 業務領域: ${{ github.event.inputs.business_domain }}
+          
+          ## T1: 要件定義
+          requirement_spec.yamlというファイルを作成する内容を出力してください。
+          
+          ## T2: データ構造設計
+          table_design.yamlというファイルを作成する内容を出力してください。
+          ")
+          
+          # ファイルに保存
+          echo "$claude_output" > design-output.txt
+          
+          # 設計書を抽出して保存（簡易版）
+          echo "# Requirement Specification
+          application:
+            name: ${{ github.event.inputs.industry }}${{ github.event.inputs.business_domain }}統合管理システム
+            industry: ${{ github.event.inputs.industry }}
+            domain: ${{ github.event.inputs.business_domain }}
+          " > requirement_spec.yaml
+          
+          echo "# Table Design
+          tables:
+            master_tables:
+              - name: 商品マスタ
+                type: static
+            transaction_tables:
+              - name: 注文テーブル
+                type: dynamic
+          " > table_design.yaml
+
+      - name: Upload Design Documents
+        uses: actions/upload-artifact@v4
+        with:
+          name: lark-base-design
+          path: |
+            *.yaml
+            *.txt
