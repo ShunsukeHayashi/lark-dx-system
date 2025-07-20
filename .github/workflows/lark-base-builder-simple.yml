@@ -1,0 +1,38 @@
+name: 'Lark Base Builder Simple Test'
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_message:
+        description: 'テストメッセージ'
+        required: false
+        default: 'Hello from GitHub Actions'
+
+jobs:
+  test-claude-action:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Test Claude Action
+        uses: anthropics/claude-code-action@beta
+        with:
+          prompt: |
+            Create a simple test file called test-output.txt with the following content:
+            - Current date and time
+            - Message: ${{ github.event.inputs.test_message }}
+            - Status: Test successful
+          model: claude-3-haiku-20240307
+          allowed_tools: "Write"
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+      - name: Upload Test Result
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-result
+          path: test-output.txt
+          if-no-files-found: warn
